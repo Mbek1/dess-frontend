@@ -5,15 +5,21 @@ import axios from 'axios'
 
 import App from './App.vue'
 import router from './router'
+import API_CONFIG from './config'
 
 const app = createApp(App)
 
 // ======================================================
-// AXIOS CONFIGURATION
+// CENTRAL API CONFIGURATION
 // ======================================================
 
-// Allow cookies to accompany cross-origin API requests.
-axios.defaults.withCredentials = true;
+// All relative Axios requests will now go to Express,
+// instead of the Vue frontend domain.
+
+axios.defaults.baseURL = API_CONFIG.baseURL
+
+// Support cookie-based authentication where required.
+axios.defaults.withCredentials = true
 
 // ======================================================
 // JWT AUTHENTICATION INTERCEPTOR
@@ -21,27 +27,24 @@ axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use(
     (config) => {
-
-        const token = sessionStorage.getItem('dess_token');
+        const token = sessionStorage.getItem('dess_token')
 
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers.Authorization = `Bearer ${token}`
         }
 
-        return config;
-
+        return config
     },
     (error) => {
-        return Promise.reject(error);
+        return Promise.reject(error)
     }
-);
+)
 
 // ======================================================
-// VUE APPLICATION INITIALIZATION
+// INITIALIZE VUE APPLICATION
 // ======================================================
 
-app.use(createPinia());
+app.use(createPinia())
+app.use(router)
 
-app.use(router);
-
-app.mount('#app');
+app.mount('#app')
