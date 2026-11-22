@@ -153,11 +153,14 @@
                   </span>
                   <strong>{{ message.senderId === currentUserId ? 'You' : message.senderName }}</strong><span class="case-team-role">{{ capitalize(message.senderRole) }}</span><time>{{ formatDateTime(message.createdAt) }}</time>
                 </div>
-                <div class="entry-bubble"><p>{{ message.content }}</p><div class="entry-meta"><span>{{ message.readBy?.length || 0 }} read</span><span>{{ activeCaseChat.caseNumber }}</span></div></div>
+                <div v-if="message.replyTo" class="case-reply-context"><strong>Replying to {{ message.replyTo.senderName }}</strong><p>{{ message.replyTo.content }}</p></div>
+                <div class="entry-bubble"><div v-if="message.isPinned" class="pinned-label"><i class="bi bi-pin-angle-fill"></i> Pinned by the case team</div><p>{{ message.content }}</p><div class="entry-meta"><span>{{ message.readBy?.length || 0 }} read</span><span>{{ activeCaseChat.caseNumber }}</span></div></div>
+                <div class="case-message-actions"><button type="button" @click="replyToCaseMessage(message)"><i class="bi bi-reply"></i> Reply</button><button type="button" @click="togglePinnedMessage(message)"><i class="bi" :class="message.isPinned ? 'bi-pin-angle-fill' : 'bi-pin-angle'"></i> {{ message.isPinned ? 'Unpin' : 'Pin' }}</button></div>
               </article>
             </div>
           </div>
           <form class="reply-composer" @submit.prevent="sendCaseChatMessage">
+            <div v-if="replyingTo" class="replying-to-banner"><span><strong>Replying to {{ replyingTo.senderName }}</strong><small>{{ replyingTo.content }}</small></span><button type="button" aria-label="Cancel reply" @click="replyingTo = null"><i class="bi bi-x-lg"></i></button></div>
             <label class="visually-hidden" for="case-chat-body">Message the case team</label>
             <textarea id="case-chat-body" v-model="replyBody" rows="2" maxlength="10000" placeholder="Message the assigned case team..." :disabled="sending"></textarea>
             <div class="reply-footer"><span>Visible to assigned DESS users only · {{ replyBody.length }}/10,000</span><button class="send-button" type="submit" :disabled="sending || !replyBody.trim()"><i class="bi bi-send-fill" aria-hidden="true"></i>{{ sending ? 'Sending...' : 'Send to case team' }}</button></div>
@@ -359,6 +362,10 @@ interface CaseChatMessageRecord {
   senderRole: string;
   senderProfilePicture?: string;
   content: string;
+  replyTo?: { messageId: string; senderName: string; content: string };
+  isPinned?: boolean;
+  pinnedBy?: string | null;
+  pinnedAt?: string | null;
   readBy: { userId: string; readAt: string }[];
   createdAt: string;
 }
@@ -376,6 +383,7 @@ const activeConversationId = ref('');
 const activeCaseChat = ref<CaseChatRecord | null>(null);
 const activeConversationMessages = ref<MessageRecord[]>([]);
 const caseChatMessages = ref<CaseChatMessageRecord[]>([]);
+const replyingTo = ref<CaseChatMessageRecord | null>(null);
 const activePartner = ref<DirectoryUser | null>(null);
 const showDetails = ref(true);
 const mobileDetailsOpen = ref(false);
@@ -512,6 +520,7 @@ const filteredCaseChats = computed(() => {
   return caseChats.value.filter(chat => [chat.caseNumber, chat.title, chat.lastMessage, ...chat.participants.map(participant => participant.name)].some(value => value?.toLowerCase().includes(query)));
 });
 const unreadCaseChatTotal = computed(() => caseChats.value.reduce((sum, chat) => sum + chat.unreadCount, 0));
+const pinnedCaseMessages = computed(() => caseChatMessages.value.filter(message => message.isPinned));
 
 async function loadMessages() {
   loadingList.value = true;
@@ -721,19 +730,41 @@ async function sendCaseChatMessage() {
   try {
     const response = await axios.post(
       `${API_CONFIG.endpoints.messages}/case-chats/${activeCaseChat.value.caseId}/messages`,
-      { content: replyBody.value.trim() },
+      { content: replyBody.value.trim(), ...(replyingTo.value ? { replyToMessageId: replyingTo.value._id } : {}) },
       { headers: authHeaders() }
     );
     caseChatMessages.value.push(response.data);
     activeCaseChat.value.lastMessage = response.data.content;
     activeCaseChat.value.lastMessageAt = response.data.createdAt;
     replyBody.value = '';
+    replyingTo.value = null;
     await loadCaseChats();
     await scrollThreadToBottom();
   } catch (error: any) {
     pageError.value = error?.response?.data?.error || 'Could not send this case-room message.';
   } finally {
     sending.value = false;
+  }
+}
+
+function replyToCaseMessage(message: CaseChatMessageRecord) {
+  replyingTo.value = message;
+  nextTick(() => document.getElementById('case-chat-body')?.focus());
+}
+
+async function togglePinnedMessage(message: CaseChatMessageRecord) {
+  if (!activeCaseChat.value) return;
+  try {
+    const response = await axios.patch(
+      `${API_CONFIG.endpoints.messages}/case-chats/${activeCaseChat.value.caseId}/messages/${message._id}/pin`,
+      { isPinned: !message.isPinned },
+      { headers: authHeaders() }
+    );
+    const index = caseChatMessages.value.findIndex(item => item._id === message._id);
+    if (index >= 0) caseChatMessages.value[index] = { ...caseChatMessages.value[index], ...response.data };
+    notice.value = response.data.isPinned ? 'Message pinned for the case team.' : 'Message unpinned.';
+  } catch (error: any) {
+    pageError.value = error?.response?.data?.error || 'Could not update the pinned message.';
   }
 }
 
@@ -1275,6 +1306,17 @@ onBeforeUnmount(() => {
 .body-field { flex: 1; }
 .body-field textarea { min-height: 160px; }
 .compose-footer,.reply-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; color: #8390a2; font-size: .7rem; }
+.case-message-actions { display: flex; gap: 12px; padding-left: 3px; }
+.case-message-actions button { padding: 2px 5px; border: 0; color: #7b8c81; background: transparent; font-size: .68rem; cursor: pointer; }
+.case-message-actions button:hover { color: #11815c; }
+.case-reply-context { max-width: 100%; padding: 8px 10px; border-left: 3px solid #20ad7b; border-radius: 5px; color: #64796c; background: #eef8f1; font-size: .7rem; }
+.case-reply-context p { margin: 3px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pinned-label { display: flex; align-items: center; gap: 5px; margin-bottom: 7px; color: #16815e; font-size: .68rem; font-weight: 750; }
+.replying-to-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; padding: 8px 10px; border-left: 3px solid #1dbb82; border-radius: 6px; background: #f0faf4; }
+.replying-to-banner span { display: grid; min-width: 0; gap: 3px; }
+.replying-to-banner strong { color: #237b58; font-size: .72rem; }
+.replying-to-banner small { overflow: hidden; color: #74877b; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.replying-to-banner button { border: 0; color: #708278; background: transparent; cursor: pointer; }
 .reply-composer { padding: 14px 18px; border-top: 1px solid var(--line); background: #fff; }
 .reply-composer textarea { min-height: 60px; max-height: 160px; background: #f9fbfe; }
 .reply-footer { margin-top: 9px; }
