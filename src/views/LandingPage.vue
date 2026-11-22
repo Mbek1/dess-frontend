@@ -179,11 +179,23 @@
         <div class="accordion mx-auto" id="faqAccordion" style="max-width: 900px;">
           <div class="accordion-item" v-for="(faq, idx) in faqs" :key="faq.q">
             <h2 class="accordion-header" :id="'heading' + idx">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + idx" aria-expanded="false" :aria-controls="'collapse' + idx">
+              <button
+                class="accordion-button"
+                :class="{ collapsed: openFaqIndex !== idx }"
+                type="button"
+                :aria-expanded="openFaqIndex === idx"
+                :aria-controls="'collapse' + idx"
+                @click="toggleFaq(idx)"
+              >
                 <i class="bi bi-question-circle me-2 text-success"></i>{{ faq.q }}
               </button>
             </h2>
-            <div :id="'collapse' + idx" class="accordion-collapse collapse" :aria-labelledby="'heading' + idx" data-bs-parent="#faqAccordion">
+            <div
+              :id="'collapse' + idx"
+              class="accordion-collapse collapse"
+              :class="{ show: openFaqIndex === idx }"
+              :aria-labelledby="'heading' + idx"
+            >
               <div class="accordion-body text-muted">{{ faq.a }}</div>
             </div>
           </div>
@@ -264,6 +276,11 @@ const faqs = [
 ];
 
 const showAuth = ref(false);
+const openFaqIndex = ref<number | null>(null);
+
+function toggleFaq(index: number) {
+  openFaqIndex.value = openFaqIndex.value === index ? null : index;
+}
 
 function scrollToSection(id: string) {
   const section = document.getElementById(id);
