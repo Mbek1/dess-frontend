@@ -1034,7 +1034,7 @@ async function submitCase() {
     // Make the newly created group room discoverable from Messages.
     const caseId = res.data.caseId || `Case #${res.data.number}`;
     window.dispatchEvent(new CustomEvent('dess-case-created', {
-      detail: { caseId: res.data._id, caseChatId: res.data.caseChat?._id, caseNumber }
+      detail: { caseId: res.data._id, caseChatId: res.data.caseChat?._id, caseNumber: caseId }
     }));
     if ((window as any).addNavNotification) {
       (window as any).addNavNotification(
