@@ -777,8 +777,6 @@ function viewItem(event: KeyboardEvent) {
 }
 
 watch(() => [route.query.recipient, route.query.caseNumber], () => { void applyRouteContext(); });
-let caseChatRefreshTimer: ReturnType<typeof setInterval> | undefined;
-
 async function refreshActiveFolder() {
   if (activeFolder.value === 'case-chats' && currentUserRole.value === 'investigator') {
     await loadCaseChats();
@@ -806,9 +804,6 @@ onMounted(() => {
   if (currentUserRole.value === 'investigator') {
     activeFolder.value = 'case-chats';
     void loadCaseChats();
-    caseChatRefreshTimer = setInterval(() => {
-      if (document.visibilityState !== 'hidden' && activeFolder.value === 'case-chats') void loadCaseChats();
-    }, 30000);
   } else {
     activeFolder.value = 'inbox';
     void loadMessages();
@@ -818,7 +813,6 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   if (recipientSearchTimer) clearTimeout(recipientSearchTimer);
-  if (caseChatRefreshTimer) clearInterval(caseChatRefreshTimer);
   window.removeEventListener('resize', syncViewport);
   window.removeEventListener('focus', refreshActiveFolder);
   window.removeEventListener('dess-case-created', handleCaseCreated);
