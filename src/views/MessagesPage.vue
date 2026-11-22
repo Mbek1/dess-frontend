@@ -1,5 +1,5 @@
 <template>
-  <main class="messages-page">
+  <main class="messages-page" :class="{ 'compact-list-view': compactLists }">
     <header class="messages-heading">
       <div>
         <p class="messages-eyebrow"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> DESS WORKSPACE / CASE-AWARE MESSAGING</p>
@@ -14,7 +14,7 @@
       </div>
     </header>
 
-    <section class="message-workspace" aria-label="Internal messages workspace">
+    <section class="message-workspace" :class="{ 'with-details': showDetails && !composeMode && (activePartner || activeCaseChat), 'details-open': showDetails }" aria-label="Internal messages workspace">
       <aside class="message-sidebar" :class="{ 'mobile-hidden': mobileThreadOpen }">
         <div class="sidebar-top">
           <label class="message-search" for="conversation-search">
@@ -44,7 +44,7 @@
               <span class="conversation-copy">
                 <span class="conversation-meta"><strong>{{ chat.caseNumber }}</strong><time>{{ formatTime(chat.lastMessageAt) }}</time></span>
                 <span class="conversation-subject">{{ chat.title }}</span>
-                <span class="conversation-preview">{{ chat.lastMessage || 'Case room created' }}</span>
+                <span v-if="showMessagePreviews" class="conversation-preview">{{ chat.lastMessage || 'Case room created' }}</span>
                 <span class="conversation-tags"><span class="case-tag"><i class="bi bi-people" aria-hidden="true"></i> {{ chat.participants.length }} DESS users</span></span>
               </span>
               <span v-if="chat.unreadCount" class="unread-dot" :aria-label="`${chat.unreadCount} unread`"></span>
@@ -61,7 +61,7 @@
             <span class="conversation-copy">
               <span class="conversation-meta"><strong>{{ conversation.partner.name }}</strong><time>{{ formatTime(conversation.latest.createdAt) }}</time></span>
               <span class="conversation-subject">{{ conversation.latest.subject }}</span>
-              <span class="conversation-preview">{{ conversation.latest.senderId === currentUserId ? 'You: ' : '' }}{{ conversation.latest.content }}</span>
+              <span v-if="showMessagePreviews" class="conversation-preview">{{ conversation.latest.senderId === currentUserId ? 'You: ' : '' }}{{ conversation.latest.content }}</span>
               <span class="conversation-tags">
                 <span v-if="conversation.latest.caseNumber" class="case-tag"><i class="bi bi-folder2-open" aria-hidden="true"></i> {{ conversation.latest.caseNumber }}</span>
                 <span v-if="conversation.latest.priority === 'urgent'" class="priority-tag">Urgent</span>
@@ -125,7 +125,10 @@
             <button class="mobile-back" type="button" aria-label="Back to messages" @click="mobileThreadOpen = false"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
             <span class="room-avatar thread-avatar"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
             <div class="thread-heading-copy"><h2>{{ activeCaseChat.title }}</h2><p>{{ activeCaseChat.caseNumber }} · {{ activeCaseChat.participants.length }} assigned DESS users</p></div>
-            <span class="case-tag"><i class="bi bi-shield-lock" aria-hidden="true"></i> Case team only</span>
+            <div class="thread-actions">
+              <span class="case-tag"><i class="bi bi-shield-lock" aria-hidden="true"></i> Case team only</span>
+              <button class="icon-action" type="button" :aria-expanded="showDetails" title="Toggle case room details" aria-label="Toggle case room details" @click="showDetails = !showDetails"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+            </div>
           </header>
           <div ref="threadScroll" class="thread-scroll">
             <div v-if="loadingThread" class="thread-state"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading case room</div>
@@ -152,6 +155,7 @@
             <div class="thread-heading-copy"><h2>{{ activePartner?.name || 'Conversation' }}</h2><p>{{ activePartner?.email }}<span v-if="activePartner?.role"> · {{ capitalize(activePartner.role) }}</span></p></div>
             <div class="thread-actions">
               <span v-if="activeConversationMessages[0]?.caseNumber" class="case-tag"><i class="bi bi-folder2-open" aria-hidden="true"></i> {{ activeConversationMessages[0].caseNumber }}</span>
+              <button class="icon-action" type="button" :aria-expanded="showDetails" title="Toggle contact details" aria-label="Toggle contact details" @click="showDetails = !showDetails"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
               <button class="icon-action" type="button" title="Archive conversation" aria-label="Archive conversation" @click="archiveConversation"><i class="bi bi-archive" aria-hidden="true"></i></button>
               <button class="icon-action danger-action" type="button" title="Delete conversation for me" aria-label="Delete conversation for me" @click="deleteConversation"><i class="bi bi-trash3" aria-hidden="true"></i></button>
             </div>
@@ -186,6 +190,59 @@
           <button class="compose-button" type="button" @click="startCompose"><i class="bi bi-pencil-square" aria-hidden="true"></i> Compose a message</button>
         </div>
       </section>
+
+      <aside v-if="showDetails && !composeMode && (activePartner || activeCaseChat)" class="contact-details" aria-label="Conversation details">
+        <header class="details-panel-header">
+          <div><p class="details-eyebrow">CONVERSATION INFO</p><h3>{{ activeCaseChat ? 'Case room' : 'Contact details' }}</h3></div>
+          <button class="icon-action" type="button" aria-label="Close details panel" @click="showDetails = false"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+        </header>
+
+        <template v-if="activePartner">
+          <div class="contact-profile">
+            <span class="contact-avatar">{{ initials(activePartner.name) }}</span>
+            <h4>{{ activePartner.name }}</h4>
+            <span class="contact-role">{{ capitalize(activePartner.role) }}</span>
+          </div>
+          <section class="details-section">
+            <h4>Contact information</h4>
+            <div class="detail-field"><span>Email address</span><a :href="'mailto:' + activePartner.email">{{ activePartner.email }}</a></div>
+            <div v-if="activePartner.organizationName" class="detail-field"><span>Organization</span><strong>{{ activePartner.organizationName }}</strong></div>
+            <div v-if="activePartner.organizationRole" class="detail-field"><span>Position</span><strong>{{ activePartner.organizationRole }}</strong></div>
+          </section>
+          <section class="details-section">
+            <h4>Conversation</h4>
+            <div class="detail-field"><span>Messages in thread</span><strong>{{ activeConversationMessages.length }}</strong></div>
+            <div class="detail-field"><span>Last activity</span><strong>{{ activeConversationMessages.length ? formatDateTime(activeConversationMessages[activeConversationMessages.length - 1].createdAt) : 'Not available' }}</strong></div>
+            <div v-if="activeConversationMessages.find(message => message.caseNumber)" class="linked-case-card">
+              <i class="bi bi-folder2-open" aria-hidden="true"></i>
+              <span><small>Linked case</small><strong>{{ activeConversationMessages.find(message => message.caseNumber)?.caseNumber }}</strong></span>
+            </div>
+          </section>
+          <a class="contact-email-action" :href="'mailto:' + activePartner.email"><i class="bi bi-envelope" aria-hidden="true"></i> Email contact</a>
+        </template>
+
+        <template v-else-if="activeCaseChat">
+          <div class="contact-profile case-room-profile">
+            <span class="case-room-detail-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
+            <h4>{{ activeCaseChat.title }}</h4>
+            <span class="contact-role">{{ activeCaseChat.caseNumber }}</span>
+          </div>
+          <section class="details-section">
+            <h4>Room information</h4>
+            <div class="detail-field"><span>Assigned participants</span><strong>{{ activeCaseChat.participants.length }}</strong></div>
+            <div class="detail-field"><span>Messages in room</span><strong>{{ caseChatMessages.length }}</strong></div>
+            <div class="detail-field"><span>Last activity</span><strong>{{ formatDateTime(activeCaseChat.lastMessageAt) }}</strong></div>
+          </section>
+          <section class="details-section">
+            <h4>Assigned DESS users</h4>
+            <div v-for="participant in activeCaseChat.participants" :key="participant._id" class="participant-row">
+              <span class="participant-avatar">{{ initials(participant.name) }}</span>
+              <span><strong>{{ participant.name }}</strong><small>{{ capitalize(participant.role) }}</small></span>
+            </div>
+          </section>
+          <div class="details-security-note"><i class="bi bi-shield-lock" aria-hidden="true"></i> This room is limited to users assigned to the case.</div>
+        </template>
+      </aside>
     </section>
   </main>
 </template>
@@ -255,6 +312,10 @@ const activeCaseChat = ref<CaseChatRecord | null>(null);
 const activeConversationMessages = ref<MessageRecord[]>([]);
 const caseChatMessages = ref<CaseChatMessageRecord[]>([]);
 const activePartner = ref<DirectoryUser | null>(null);
+const showDetails = ref(true);
+const showMessagePreviews = ref(true);
+const compactLists = ref(false);
+const confirmBeforeDelete = ref(true);
 const conversationSearch = ref('');
 const loadingList = ref(true);
 const loadingThread = ref(false);
@@ -290,6 +351,23 @@ function capitalize(value?: string) { if (!value) return ''; return value.toLowe
 function formatTime(value: string) { return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 function formatDateTime(value: string) { return new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
 function categoryLabel(value: string) { return ({ 'case-related': 'Case related', general: 'General', urgent: 'Urgent', 'follow-up': 'Follow-up' } as Record<string, string>)[value] || 'General'; }
+
+function syncUiPreferences() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dess_settings') || '{}');
+    showMessagePreviews.value = saved.showMessagePreviews !== false;
+    compactLists.value = saved.compactLists === true;
+    confirmBeforeDelete.value = saved.confirmBeforeDelete !== false;
+  } catch {
+    showMessagePreviews.value = true;
+    compactLists.value = false;
+    confirmBeforeDelete.value = true;
+  }
+}
+
+function handleSettingsUpdated() {
+  syncUiPreferences();
+}
 
 const conversations = computed<Conversation[]>(() => {
   const groups = new Map<string, MessageRecord[]>();
@@ -561,7 +639,8 @@ async function archiveConversation() {
 }
 
 async function deleteConversation() {
-  if (!activePartner.value || !window.confirm('Delete this conversation from your message view? This will not remove it for the other participant.')) return;
+  if (!activePartner.value) return;
+  if (confirmBeforeDelete.value && !window.confirm('Delete this conversation from your message view? This will not remove it for the other participant.')) return;
   try {
     await axios.delete(`${API_CONFIG.endpoints.messages}/conversation/${activePartner.value._id}`, { headers: authHeaders() });
     activeConversationId.value = '';
@@ -590,12 +669,15 @@ onMounted(() => {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
   currentUserId.value = currentUser.id || '';
   currentUserRole.value = currentUser.role || '';
+  syncUiPreferences();
+  window.addEventListener('dess-settings-updated', handleSettingsUpdated);
   void loadMessages();
   void applyRouteContext();
   window.addEventListener('keydown', viewItem);
 });
 onBeforeUnmount(() => {
   if (recipientSearchTimer) clearTimeout(recipientSearchTimer);
+  window.removeEventListener('dess-settings-updated', handleSettingsUpdated);
   window.removeEventListener('keydown', viewItem);
 });
 </script>
@@ -1114,4 +1196,109 @@ onBeforeUnmount(() => {
   .compose-footer { align-items: flex-start; flex-direction: column; }
   .compose-footer .send-button { align-self: flex-end; }
 }
+
+
+/* Light, three-panel conversation workspace inspired by the supplied reference. */
+.messages-page {
+  --msg-bg: #f1f7f4;
+  --panel: #ffffff;
+  --panel-soft: #f7fbf9;
+  --line: #e2ebe6;
+  --main: #192a25;
+  --muted: #71817a;
+  --blue: #159c78;
+  --blue-soft: #e8f7f0;
+  --green: #17b981;
+  padding: 22px clamp(12px, 2.2vw, 28px) 28px;
+}
+.messages-heading { width: min(1580px, 100%); margin-bottom: 15px; }
+.messages-eyebrow { color: #139b76; }
+.messages-heading h1 { color: #17251f; }
+.connection-status { color: #74867d; }
+.compose-button,.send-button { border-color: #1dbb82; background: #19b978; box-shadow: 0 5px 13px rgba(25, 185, 120, .16); }
+.compose-button:hover,.send-button:hover:not(:disabled) { border-color: #0f9c69; background: #0f9c69; }
+.message-workspace { width: min(1580px, 100%); min-height: min(790px, calc(100vh - 155px)); grid-template-columns: minmax(250px, 290px) minmax(0, 1fr); border-color: #e1e9e4; border-radius: 12px; box-shadow: 0 12px 34px rgba(31, 64, 47, .07); }
+.message-workspace.with-details { grid-template-columns: minmax(245px, 275px) minmax(380px, 1fr) minmax(235px, 270px); }
+.message-sidebar { background: #fff; border-right-color: #e4ece7; }
+.sidebar-top { padding: 15px; }
+.message-search { border-color: #e1eae4; background: #f8fbf9; }
+.folder-tabs { gap: 4px; }
+.folder-tabs button.active { border-color: #ccebdd; color: #087b59; background: #e8f7f0; }
+.folder-count { background: #17b981; }
+.conversation-row { padding: 13px 14px; border-bottom-color: #edf2ee; }
+.conversation-row:hover { background: #f7fbf8; }
+.conversation-row.selected { border-left-color: #1dbb82; background: #eaf8f1; box-shadow: inset 3px 0 #1dbb82; }
+.person-avatar { background: #e4f3eb; color: #19845f; }
+.room-avatar { color: #16815e; background: #e4f5eb; }
+.case-tag { border-color: #d4eadf; color: #24785d; background: #f0faf4; }
+.priority-tag { border-color: #f2d8d4; color: #a64b43; background: #fff5f3; }
+.priority-high { border-color: #f0e1bc; color: #946315; background: #fff9eb; }
+.unread-dot { background: #19b978; }
+.sidebar-foot { color: #85938b; background: #fbfdfb; }
+.message-thread { min-width: 0; background: #fbfdfc; }
+.thread-header { min-height: 68px; padding: 12px 17px; border-bottom-color: #e5ede8; background: #fff; }
+.thread-heading-copy h2 { color: #1a2a23; }
+.thread-heading-copy p { color: #809087; }
+.icon-action,.mobile-back { border-color: #e1eae4; color: #73827a; background: #fff; }
+.icon-action:hover,.mobile-back:hover { border-color: #b5dfc9; color: #13845d; background: #f1faf5; }
+.thread-scroll { background-color: #f8fbf9; background-image: radial-gradient(rgba(28, 142, 96, .05) .8px, transparent .8px); background-size: 18px 18px; }
+.thread-day { color: #9aa79f; }
+.thread-day::before,.thread-day::after { background: #e5ede8; }
+.entry-byline strong { color: #41564b; }
+.entry-bubble { border-color: #e4ebe6; border-radius: 12px 12px 12px 4px; background: #fff; box-shadow: 0 3px 10px rgba(32, 69, 48, .04); }
+.message-outgoing .entry-bubble { border-color: #d2eee0; border-radius: 12px 12px 4px 12px; background: #e2f6eb; }
+.entry-topic { color: #20372b; }
+.entry-bubble p { color: #40564b; }
+.entry-meta { border-top-color: #e7efe9; color: #819087; }
+.reply-composer { border-top-color: #e5ede8; background: #fff; }
+.reply-composer textarea { border-color: #e1eae4; border-radius: 9px; background: #f8fbf9; }
+.reply-composer textarea:focus { border-color: #91d6b2; box-shadow: 0 0 0 3px rgba(23, 185, 129, .1); }
+.compose-body { background: #fbfdfb; }
+.welcome-icon { color: #159c78; background: #e5f6ed; }
+.welcome-state h2 { color: #20372b; }
+.welcome-state > p:not(.messages-eyebrow) { color: #7d8f84; }
+.contact-details { display: flex; min-width: 0; flex-direction: column; overflow-y: auto; border-left: 1px solid #e4ece7; background: #fff; }
+.details-panel-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 17px 15px; border-bottom: 1px solid #edf2ee; }
+.details-eyebrow { margin: 0 0 4px; color: #159c78; font-size: .62rem; font-weight: 800; letter-spacing: .09em; }
+.details-panel-header h3 { margin: 0; color: #23342b; font-size: .95rem; font-weight: 750; }
+.contact-profile { display: grid; justify-items: center; gap: 7px; padding: 22px 15px 18px; border-bottom: 1px solid #edf2ee; text-align: center; }
+.contact-avatar,.case-room-detail-icon { display: grid; width: 76px; height: 76px; place-items: center; border: 4px solid #f0f8f3; border-radius: 50%; color: #17865e; background: #e5f5eb; font-size: 1.25rem; font-weight: 800; }
+.case-room-detail-icon { border-radius: 20px; font-size: 1.7rem; }
+.contact-profile h4 { margin: 3px 0 0; color: #1b2b22; font-size: 1rem; font-weight: 800; }
+.contact-role { color: #16956c; font-size: .75rem; font-weight: 650; }
+.details-section { display: grid; gap: 11px; padding: 15px; border-bottom: 1px solid #edf2ee; }
+.details-section h4 { margin: 0; color: #30443a; font-size: .79rem; font-weight: 750; }
+.detail-field { display: grid; gap: 4px; }
+.detail-field > span { color: #87958c; font-size: .67rem; }
+.detail-field strong,.detail-field a { overflow-wrap: anywhere; color: #40584b; font-size: .75rem; font-weight: 650; text-decoration: none; }
+.detail-field a:hover { color: #0f986b; }
+.linked-case-card { display: flex; align-items: center; gap: 9px; padding: 10px; border: 1px solid #dcefe4; border-radius: 8px; color: #16845d; background: #f1faf4; }
+.linked-case-card > span { display: grid; gap: 3px; }
+.linked-case-card small { color: #7c9384; font-size: .64rem; }
+.linked-case-card strong { color: #27714f; font-size: .77rem; }
+.participant-row { display: flex; align-items: center; gap: 8px; }
+.participant-avatar { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 50%; color: #237c5a; background: #e6f5ec; font-size: .64rem; font-weight: 750; }
+.participant-row > span:last-child { display: grid; gap: 2px; }
+.participant-row strong { color: #3a5144; font-size: .72rem; }
+.participant-row small { color: #89968e; font-size: .64rem; }
+.details-security-note { display: flex; align-items: flex-start; gap: 8px; margin: 13px; padding: 10px; border-radius: 7px; color: #668474; background: #f2f8f3; font-size: .68rem; line-height: 1.45; }
+.details-security-note i { color: #159c78; }
+.compact-list-view .conversation-row { padding-top: 8px; padding-bottom: 8px; }
+.compact-list-view .case-tag { font-size: .62rem; }
+.hide-previews .conversation-preview { display: none; }
+
+@media (max-width: 1080px) {
+  .message-workspace.with-details { grid-template-columns: minmax(240px, 285px) minmax(0, 1fr); }
+  .contact-details { display: none; }
+  .message-workspace.with-details.details-open { grid-template-columns: minmax(240px, 285px) minmax(0, 1fr) minmax(230px, 250px); }
+  .message-workspace.with-details.details-open .contact-details { display: flex; }
+}
+@media (max-width: 760px) {
+  .messages-page { padding: 16px 12px 20px; }
+  .message-workspace,.message-workspace.with-details,.message-workspace.with-details.details-open { grid-template-columns: minmax(0, 1fr); }
+  .message-sidebar,.message-thread { grid-column: 1; grid-row: 1; }
+  .message-sidebar.mobile-hidden,.message-thread.mobile-hidden { display: none; }
+  .contact-details { display: none !important; }
+}
+
 </style>
