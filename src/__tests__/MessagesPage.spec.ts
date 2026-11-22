@@ -14,7 +14,13 @@ vi.mock('axios', () => ({
 }))
 
 const EmptyView = { template: '<div />' }
-const recipient = { _id: 'investigator-2', name: 'Case Investigator', email: 'investigator@example.test', role: 'investigator' }
+const recipient = {
+  _id: 'investigator-2',
+  name: 'Case Investigator',
+  email: 'investigator@example.test',
+  role: 'investigator',
+  profilePicture: '/api/users/investigator-2/avatar?v=42'
+}
 const sentMessage = {
   _id: 'message-1',
   conversationId: 'conversation-1',
@@ -34,6 +40,8 @@ const sentMessage = {
   status: 'delivered',
   caseId: 'case-1',
   caseNumber: '2026-001',
+  senderProfilePicture: '/api/users/researcher-1/avatar?v=41',
+  recipientProfilePicture: '/api/users/investigator-2/avatar?v=42',
   createdAt: new Date().toISOString(),
 }
 const caseChat = {
@@ -41,7 +49,14 @@ const caseChat = {
   caseId: 'case-1',
   caseNumber: '2026-001',
   title: '2026-001 · Archived case',
-  participants: [{ _id: 'investigator-1', name: 'Investigator One', email: 'one@example.test', role: 'investigator' }],
+  participants: [{
+    _id: 'participant-record-1',
+    userId: 'investigator-1',
+    name: 'Investigator One',
+    email: 'one@example.test',
+    role: 'investigator',
+    profilePicture: '/api/users/investigator-1/avatar?v=43'
+  }],
   lastMessage: 'Team update',
   lastMessageAt: new Date().toISOString(),
   unreadCount: 0,
@@ -73,7 +88,7 @@ async function mountMessages(path = '/messages', role = 'researcher') {
   await router.isReady()
   const wrapper = mount(MessagesPage, { global: { plugins: [router] } })
   await flushPromises()
-  return { wrapper, router }
+  return { wrapper, router, messageSent }
 }
 
 afterEach(() => {
@@ -88,6 +103,7 @@ describe('MessagesPage', () => {
     expect(wrapper.text()).toContain('Compose message')
     expect(wrapper.text()).toContain('Case Investigator')
     expect(wrapper.text()).toContain('2026-001')
+    expect(wrapper.find('img[alt="Case Investigator profile photo"]').attributes('src')).toContain('/api/users/investigator-2/avatar?v=42')
     expect(axios.get).toHaveBeenCalledWith(
       '/api/users?userId=investigator-2',
       expect.objectContaining({ headers: { Authorization: 'Bearer test-token' } }),
@@ -111,6 +127,21 @@ describe('MessagesPage', () => {
     expect(wrapper.text()).toContain('Message sent securely.')
   })
 
+  it('uses the latest sender and recipient photos in direct message threads', async () => {
+    const { wrapper, messageSent } = await mountMessages()
+    messageSent.value = true
+
+    const sentFolder = wrapper.findAll('.folder-tabs button').find(button => button.text().includes('Sent'))
+    expect(sentFolder).toBeTruthy()
+    await sentFolder!.trigger('click')
+    await flushPromises()
+    await wrapper.find('.conversation-row').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('img[alt="Case Investigator profile photo"]').attributes('src')).toContain('/api/users/investigator-2/avatar?v=42')
+    expect(wrapper.find('img[alt="Researcher Test profile photo"]').attributes('src')).toContain('/api/users/researcher-1/avatar?v=41')
+  })
+
   it('shows case rooms only to investigators and supports group replies', async () => {
     const { wrapper } = await mountMessages('/messages', 'investigator')
     const roomTab = wrapper.findAll('.folder-tabs button').find(button => button.text().includes('Case rooms'))
@@ -123,6 +154,7 @@ describe('MessagesPage', () => {
     expect(wrapper.text()).toContain('assigned DESS users')
     expect(wrapper.text()).toContain('Room information')
     expect(wrapper.text()).toContain('Assigned DESS users')
+    expect(wrapper.find('img[alt="Investigator One profile photo"]').attributes('src')).toContain('/api/users/investigator-1/avatar?v=43')
     await wrapper.find('#case-chat-body').setValue('Group status update')
     await wrapper.find('.reply-composer').trigger('submit')
     await flushPromises()

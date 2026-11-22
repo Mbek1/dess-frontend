@@ -57,7 +57,10 @@
             <span>{{ activeFolder === 'inbox' ? 'Start an internal conversation when you need to coordinate.' : 'Messages will appear in this folder.' }}</span>
           </div>
           <button v-for="conversation in filteredConversations" :key="conversation.conversationId" class="conversation-row" :class="{ selected: activeConversationId === conversation.conversationId }" type="button" @click="openConversation(conversation)">
-            <span class="person-avatar">{{ initials(conversation.partner.name) }}</span>
+            <span class="person-avatar">
+              <img v-if="avatarSource(conversation.partner._id, conversation.partner.profilePicture)" :src="avatarSource(conversation.partner._id, conversation.partner.profilePicture)" :alt="`${conversation.partner.name} profile photo`" @error="markAvatarFailed(conversation.partner._id, conversation.partner.profilePicture)" />
+              <span v-else>{{ initials(conversation.partner.name) }}</span>
+            </span>
             <span class="conversation-copy">
               <span class="conversation-meta"><strong>{{ conversation.partner.name }}</strong><time>{{ formatTime(conversation.latest.createdAt) }}</time></span>
               <span class="conversation-subject">{{ conversation.latest.subject }}</span>
@@ -95,7 +98,10 @@
               </div>
             </label>
             <div v-if="recipient" class="selected-recipient">
-              <span class="person-avatar">{{ initials(recipient.name) }}</span>
+              <span class="person-avatar">
+                <img v-if="avatarSource(recipient._id, recipient.profilePicture)" :src="avatarSource(recipient._id, recipient.profilePicture)" :alt="`${recipient.name} profile photo`" @error="markAvatarFailed(recipient._id, recipient.profilePicture)" />
+                <span v-else>{{ initials(recipient.name) }}</span>
+              </span>
               <span><strong>{{ recipient.name }}</strong><small>{{ recipient.email }} · {{ capitalize(recipient.role) }}</small></span>
               <span class="verified-recipient"><i class="bi bi-shield-check" aria-hidden="true"></i> DESS user</span>
             </div>
@@ -103,7 +109,10 @@
             <div v-else-if="recipientSearch.trim() && !recipient && recipients.length === 0" class="recipient-results">No matching users.</div>
             <div v-else-if="recipients.length" class="recipient-results">
               <button v-for="user in recipients" :key="user._id" type="button" class="recipient-option" @click="selectRecipient(user)">
-                <span class="person-avatar">{{ initials(user.name) }}</span>
+                <span class="person-avatar">
+                  <img v-if="avatarSource(user._id, user.profilePicture)" :src="avatarSource(user._id, user.profilePicture)" :alt="`${user.name} profile photo`" @error="markAvatarFailed(user._id, user.profilePicture)" />
+                  <span v-else>{{ initials(user.name) }}</span>
+                </span>
                 <span><strong>{{ user.name }}</strong><small>{{ user.email }} · {{ capitalize(user.role) }}</small></span>
                 <i class="bi bi-arrow-up-left" aria-hidden="true"></i>
               </button>
@@ -136,7 +145,13 @@
             <div v-else class="thread-message-list">
               <div class="thread-day"><span>Case team conversation</span></div>
               <article v-for="message in caseChatMessages" :key="message._id" class="message-entry" :class="{ 'message-outgoing': message.senderId === currentUserId }">
-                <div class="entry-byline"><strong>{{ message.senderId === currentUserId ? 'You' : message.senderName }}</strong><span class="case-team-role">{{ capitalize(message.senderRole) }}</span><time>{{ formatDateTime(message.createdAt) }}</time></div>
+                <div class="entry-byline">
+                  <span class="message-author-avatar">
+                    <img v-if="avatarSource(message.senderId, message.senderProfilePicture)" :src="avatarSource(message.senderId, message.senderProfilePicture)" :alt="`${message.senderName} profile photo`" @error="markAvatarFailed(message.senderId, message.senderProfilePicture)" />
+                    <span v-else>{{ initials(message.senderName) }}</span>
+                  </span>
+                  <strong>{{ message.senderId === currentUserId ? 'You' : message.senderName }}</strong><span class="case-team-role">{{ capitalize(message.senderRole) }}</span><time>{{ formatDateTime(message.createdAt) }}</time>
+                </div>
                 <div class="entry-bubble"><p>{{ message.content }}</p><div class="entry-meta"><span>{{ message.readBy?.length || 0 }} read</span><span>{{ activeCaseChat.caseNumber }}</span></div></div>
               </article>
             </div>
@@ -151,7 +166,10 @@
         <template v-else-if="activeConversationId">
           <header class="thread-header">
             <button class="mobile-back" type="button" aria-label="Back to messages" @click="mobileThreadOpen = false"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
-            <span class="person-avatar thread-avatar">{{ initials(activePartner?.name) }}</span>
+            <span class="person-avatar thread-avatar">
+              <img v-if="avatarSource(activePartner?._id, activePartner?.profilePicture)" :src="avatarSource(activePartner?._id, activePartner?.profilePicture)" :alt="`${activePartner?.name || 'Contact'} profile photo`" @error="markAvatarFailed(activePartner?._id, activePartner?.profilePicture)" />
+              <span v-else>{{ initials(activePartner?.name) }}</span>
+            </span>
             <div class="thread-heading-copy"><h2>{{ activePartner?.name || 'Conversation' }}</h2><p>{{ activePartner?.email }}<span v-if="activePartner?.role"> · {{ capitalize(activePartner.role) }}</span></p></div>
             <div class="thread-actions">
               <span v-if="activeConversationMessages[0]?.caseNumber" class="case-tag"><i class="bi bi-folder2-open" aria-hidden="true"></i> {{ activeConversationMessages[0].caseNumber }}</span>
@@ -166,7 +184,13 @@
             <div v-else class="thread-message-list">
               <div class="thread-day"><span>Conversation history</span></div>
               <article v-for="message in activeConversationMessages" :key="message._id" class="message-entry" :class="{ 'message-outgoing': message.senderId === currentUserId }">
-                <div class="entry-byline"><strong>{{ message.senderId === currentUserId ? 'You' : message.senderName }}</strong><time>{{ formatDateTime(message.createdAt) }}</time><span v-if="message.status === 'read' && message.senderId === currentUserId" class="read-receipt"><i class="bi bi-check2-all" aria-hidden="true"></i> Read</span></div>
+                <div class="entry-byline">
+                  <span class="message-author-avatar">
+                    <img v-if="avatarSource(message.senderId, message.senderProfilePicture)" :src="avatarSource(message.senderId, message.senderProfilePicture)" :alt="`${message.senderName} profile photo`" @error="markAvatarFailed(message.senderId, message.senderProfilePicture)" />
+                    <span v-else>{{ initials(message.senderName) }}</span>
+                  </span>
+                  <strong>{{ message.senderId === currentUserId ? 'You' : message.senderName }}</strong><time>{{ formatDateTime(message.createdAt) }}</time><span v-if="message.status === 'read' && message.senderId === currentUserId" class="read-receipt"><i class="bi bi-check2-all" aria-hidden="true"></i> Read</span>
+                </div>
                 <div class="entry-bubble">
                   <div class="entry-topic"><strong>{{ message.subject }}</strong><span v-if="message.priority !== 'normal'" class="priority-tag" :class="{ 'priority-high': message.priority === 'high' }">{{ capitalize(message.priority) }} priority</span></div>
                   <p>{{ message.content }}</p>
@@ -199,7 +223,10 @@
 
         <template v-if="activePartner">
           <div class="contact-profile">
-            <span class="contact-avatar">{{ initials(activePartner.name) }}</span>
+            <span class="contact-avatar">
+              <img v-if="avatarSource(activePartner._id, activePartner.profilePicture)" :src="avatarSource(activePartner._id, activePartner.profilePicture)" :alt="`${activePartner.name} profile photo`" @error="markAvatarFailed(activePartner._id, activePartner.profilePicture)" />
+              <span v-else>{{ initials(activePartner.name) }}</span>
+            </span>
             <h4>{{ activePartner.name }}</h4>
             <span class="contact-role">{{ capitalize(activePartner.role) }}</span>
           </div>
@@ -235,8 +262,11 @@
           </section>
           <section class="details-section">
             <h4>Assigned DESS users</h4>
-            <div v-for="participant in activeCaseChat.participants" :key="participant._id" class="participant-row">
-              <span class="participant-avatar">{{ initials(participant.name) }}</span>
+            <div v-for="participant in activeCaseChat.participants" :key="participant.userId || participant._id" class="participant-row">
+              <span class="participant-avatar">
+                <img v-if="avatarSource(participant.userId || participant._id, participant.profilePicture)" :src="avatarSource(participant.userId || participant._id, participant.profilePicture)" :alt="`${participant.name} profile photo`" @error="markAvatarFailed(participant.userId || participant._id, participant.profilePicture)" />
+                <span v-else>{{ initials(participant.name) }}</span>
+              </span>
               <span><strong>{{ participant.name }}</strong><small>{{ capitalize(participant.role) }}</small></span>
             </div>
           </section>
@@ -274,16 +304,34 @@ interface MessageRecord {
   status: 'draft' | 'sent' | 'delivered' | 'read';
   caseId?: string;
   caseNumber?: string;
+  senderProfilePicture?: string;
+  recipientProfilePicture?: string;
   createdAt: string;
 }
-interface DirectoryUser { _id: string; name: string; email: string; role: string; organizationName?: string; organizationRole?: string }
+interface DirectoryUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  organizationName?: string;
+  organizationRole?: string;
+  profilePicture?: string;
+}
+interface CaseChatParticipant {
+  _id?: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  profilePicture?: string;
+}
 interface Conversation { conversationId: string; latest: MessageRecord; messages: MessageRecord[]; unread: number; partner: DirectoryUser }
 interface CaseChatRecord {
   _id: string;
   caseId: string;
   caseNumber: string;
   title: string;
-  participants: DirectoryUser[];
+  participants: CaseChatParticipant[];
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
@@ -293,6 +341,7 @@ interface CaseChatMessageRecord {
   senderId: string;
   senderName: string;
   senderRole: string;
+  senderProfilePicture?: string;
   content: string;
   readBy: { userId: string; readAt: string }[];
   createdAt: string;
@@ -316,6 +365,7 @@ const showDetails = ref(true);
 const showMessagePreviews = ref(true);
 const compactLists = ref(false);
 const confirmBeforeDelete = ref(true);
+const failedAvatarKeys = ref<string[]>([]);
 const conversationSearch = ref('');
 const loadingList = ref(true);
 const loadingThread = ref(false);
@@ -347,6 +397,21 @@ const folders: { value: Folder; label: string }[] = [
 function getToken() { return sessionStorage.getItem('dess_token') || ''; }
 function authHeaders() { return { Authorization: `Bearer ${getToken()}` }; }
 function initials(name?: string) { return (name || 'DESS').split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase(); }
+
+function avatarKey(userId?: string, profilePicture?: string) {
+  return userId && profilePicture ? `${userId}|${profilePicture}` : '';
+}
+
+function avatarSource(userId?: string, profilePicture?: string) {
+  if (!userId || !profilePicture || failedAvatarKeys.value.includes(avatarKey(userId, profilePicture))) return '';
+  if (/^https?:\/\//i.test(profilePicture)) return profilePicture;
+  return `${API_CONFIG.baseURL}${profilePicture.startsWith('/') ? '' : '/'}${profilePicture}`;
+}
+
+function markAvatarFailed(userId?: string, profilePicture?: string) {
+  const key = avatarKey(userId, profilePicture);
+  if (key && !failedAvatarKeys.value.includes(key)) failedAvatarKeys.value = [...failedAvatarKeys.value, key];
+}
 function capitalize(value?: string) { if (!value) return ''; return value.toLowerCase() === 'investigator' ? 'DESS User' : value[0].toUpperCase() + value.slice(1); }
 function formatTime(value: string) { return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 function formatDateTime(value: string) { return new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
@@ -389,7 +454,8 @@ const conversations = computed<Conversation[]>(() => {
         _id: isSender ? latest.recipientId : latest.senderId,
         name: isSender ? latest.recipientName : latest.senderName,
         email: isSender ? latest.recipientEmail : latest.senderEmail,
-        role: isSender ? latest.recipientRole : latest.senderRole
+        role: isSender ? latest.recipientRole : latest.senderRole,
+        profilePicture: isSender ? latest.recipientProfilePicture : latest.senderProfilePicture
       }
     };
   }).sort((a, b) => new Date(b.latest.createdAt).getTime() - new Date(a.latest.createdAt).getTime());
@@ -1300,5 +1366,41 @@ onBeforeUnmount(() => {
   .message-sidebar.mobile-hidden,.message-thread.mobile-hidden { display: none; }
   .contact-details { display: none !important; }
 }
+
+
+/* Live DESS account avatars */
+.person-avatar,.contact-avatar,.participant-avatar,.message-author-avatar {
+  position: relative;
+  overflow: hidden;
+}
+.person-avatar img,.contact-avatar img,.participant-avatar img,.message-author-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+.person-avatar > span,.contact-avatar > span,.participant-avatar > span,.message-author-avatar > span {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+}
+.contact-avatar img { border: 0; }
+.participant-avatar { overflow: hidden; }
+.message-author-avatar {
+  display: inline-grid;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  place-items: center;
+  border-radius: 50%;
+  color: #267a58;
+  background: #e3f4e9;
+  font-size: .58rem;
+  font-weight: 750;
+}
+.message-author-avatar img { border-radius: 50%; }
+.entry-byline { align-items: center; }
 
 </style>
