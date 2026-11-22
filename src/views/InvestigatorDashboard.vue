@@ -119,6 +119,98 @@
       </div>
     </div>
 
+    <!-- Case activity and last-visited case -->
+    <section class="row g-4 dashboard-insights mb-4">
+      <div class="col-lg-8">
+        <article class="insight-panel case-activity-panel">
+          <div class="insight-panel-heading">
+            <div>
+              <span class="insight-eyebrow">CASE ACTIVITY</span>
+              <h3>Cases over time</h3>
+              <p>{{ chartPeriodLabel }} · {{ chartTotals.created }} created and {{ chartTotals.closed }} closed</p>
+            </div>
+            <select v-model="caseActivityPeriod" class="form-select chart-period-select" aria-label="Case activity period">
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="6m">Last 6 months</option>
+              <option value="12m">Last 12 months</option>
+            </select>
+          </div>
+
+          <div class="chart-legend">
+            <span><i class="chart-legend-dot chart-created"></i> Cases created</span>
+            <span><i class="chart-legend-dot chart-closed"></i> Cases closed</span>
+          </div>
+
+          <div v-if="loadingCases" class="chart-empty-state">Loading case activity...</div>
+          <div v-else-if="!chartHasActivity" class="chart-empty-state">
+            <i class="bi bi-bar-chart-line"></i>
+            <strong>No case activity in this period</strong>
+            <span>Try another period or create a case to start building your activity history.</span>
+          </div>
+          <div v-else class="case-activity-chart" role="img" :aria-label="'Case activity: ' + chartTotals.created + ' created and ' + chartTotals.closed + ' closed'">
+            <div class="chart-axis-labels" aria-hidden="true">
+              <span>{{ chartMax }}</span>
+              <span>{{ Math.ceil(chartMax / 2) }}</span>
+              <span>0</span>
+            </div>
+            <div class="chart-plot">
+              <div v-for="bucket in caseActivityBuckets" :key="bucket.key" class="chart-column">
+                <div class="chart-bars">
+                  <span
+                    class="chart-bar chart-created"
+                    :style="{ height: chartBarHeight(bucket.created) }"
+                    :title="'Created: ' + bucket.created"
+                  ></span>
+                  <span
+                    class="chart-bar chart-closed"
+                    :style="{ height: chartBarHeight(bucket.closed) }"
+                    :title="'Closed: ' + bucket.closed"
+                  ></span>
+                </div>
+                <small>{{ bucket.label }}</small>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="col-lg-4">
+        <article class="insight-panel recent-case-panel">
+          <div class="insight-panel-heading">
+            <div>
+              <span class="insight-eyebrow">YOUR ACTIVITY</span>
+              <h3>Last visited case</h3>
+              <p>Pick up where you left off</p>
+            </div>
+            <i class="bi bi-clock-history recent-heading-icon" aria-hidden="true"></i>
+          </div>
+
+          <div v-if="recentCaseItem" class="recent-case-content">
+            <div class="recent-case-icon"><i class="bi bi-folder2-open"></i></div>
+            <span class="recent-case-reference">{{ recentCaseItem.caseId || 'Case #' + recentCaseItem.number }}</span>
+            <h4>{{ recentCaseItem.name }}</h4>
+            <span class="recent-case-status" :class="recentCaseItem.status === 'closed' ? 'is-closed' : 'is-open'">
+              {{ capitalizeCase(recentCaseItem.status) }}
+            </span>
+            <small class="recent-case-visited">Last opened {{ formatViewedAt(recentCaseItem.visitedAt) }}</small>
+            <button type="button" class="btn btn-outline-primary w-100 mt-3" @click="openRecentCase">
+              <i class="bi bi-arrow-up-right-square me-1"></i> Reopen case
+            </button>
+          </div>
+
+          <div v-else class="recent-case-empty">
+            <i class="bi bi-folder2" aria-hidden="true"></i>
+            <strong>No recently viewed case</strong>
+            <span>Cases you open from the archives will appear here.</span>
+            <button type="button" class="btn btn-outline-primary btn-sm mt-2" @click="router.push('/archives')">
+              Browse case archives
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
 <button class="btn btn-success" @click="showCreateCase = true"><i class="bi bi-plus-circle"></i> Create Case</button>
 
     <!-- Tab Content -->
@@ -388,6 +480,28 @@ interface Message {
   // Token and navigation helpers are provided by AppNavigation
   // Use `window.getNavToken()` and `window.nav*` helpers exposed by AppNavigation.vue
 const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+const currentUserStorageKey = String(user?.id || user?._id || user?.email || '');
+
+interface RecentCaseRecord {
+  id: string;
+  caseId?: string;
+  number?: number;
+  name: string;
+  status: string;
+  visitedAt: string;
+}
+
+function readRecentCase(): RecentCaseRecord | null {
+  if (!currentUserStorageKey) return null;
+  try {
+    const saved = localStorage.getItem(`dess:last-visited-case:${encodeURIComponent(currentUserStorageKey)}`);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed.id === 'string' ? parsed as RecentCaseRecord : null;
+  } catch {
+    return null;
+  }
+}
 
 // State
 const today = new Date().toLocaleDateString();
@@ -475,16 +589,20 @@ interface EvidenceItem {
   type: string;
 }
 interface AuditLogItem {
-  filename: string;
-  type: string;
-  date: string;
+  action?: string;
+  filename?: string;
+  type?: string;
+  date?: string;
 }
 interface CaseItem {
   _id: string;
   number: number;
+  caseId?: string;
   name: string;
   description: string;
   status: string;
+  createdAt?: string;
+  updatedAt?: string;
   team: TeamUser[];
   evidence?: EvidenceItem[];
   auditLog?: AuditLogItem[];
@@ -683,6 +801,143 @@ const stats = computed(() => ({
   open: cases.value.filter((c) => c.status === 'open').length,
   closed: cases.value.filter((c) => c.status === 'closed').length,
 }));
+
+const caseActivityPeriod = ref<'7d' | '30d' | '6m' | '12m'>('6m');
+const recentCase = ref<RecentCaseRecord | null>(readRecentCase());
+
+const recentCaseItem = computed(() => {
+  if (!recentCase.value) return null;
+  const accessibleCase = cases.value.find(item => item._id === recentCase.value?.id);
+  if (!accessibleCase) return null;
+  return {
+    ...recentCase.value,
+    caseId: accessibleCase.caseId || recentCase.value.caseId,
+    number: accessibleCase.number || recentCase.value.number,
+    name: accessibleCase.name || recentCase.value.name,
+    status: accessibleCase.status || recentCase.value.status
+  };
+});
+
+function openRecentCase() {
+  const caseId = recentCaseItem.value?.id;
+  if (caseId) void router.push(`/cases/${caseId}/tracking`);
+}
+
+function formatViewedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'recently';
+  return date.toLocaleString([], {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+const chartPeriodLabel = computed(() => ({
+  '7d': 'Last 7 days',
+  '30d': 'Last 30 days',
+  '6m': 'Last 6 months',
+  '12m': 'Last 12 months'
+}[caseActivityPeriod.value]));
+
+function getCaseClosedDate(caseItem: CaseItem): string | null {
+  const closeLogs = (caseItem.auditLog || [])
+    .filter(log => log.action === 'CASE_CLOSE' && log.date)
+    .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime());
+  if (closeLogs.length) return closeLogs[closeLogs.length - 1].date || null;
+  if (caseItem.status === 'closed' && caseItem.updatedAt) return caseItem.updatedAt;
+  return null;
+}
+
+const caseActivityBuckets = computed(() => {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const period = caseActivityPeriod.value;
+  let startDate: Date;
+  let bucketCount: number;
+
+  if (period === '7d') {
+    startDate = new Date(todayStart);
+    startDate.setDate(startDate.getDate() - 6);
+    bucketCount = 7;
+  } else if (period === '30d') {
+    startDate = new Date(todayStart);
+    startDate.setDate(startDate.getDate() - 29);
+    bucketCount = 5;
+  } else {
+    const months = period === '6m' ? 6 : 12;
+    startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    bucketCount = months;
+  }
+
+  const buckets = Array.from({ length: bucketCount }, (_, index) => {
+    let date: Date;
+    let label: string;
+    if (period === '7d') {
+      date = new Date(startDate);
+      date.setDate(startDate.getDate() + index);
+      label = date.toLocaleDateString([], { weekday: 'short' });
+    } else if (period === '30d') {
+      date = new Date(startDate);
+      date.setDate(startDate.getDate() + index * 6);
+      label = date.toLocaleDateString([], { day: 'numeric', month: 'short' });
+    } else {
+      date = new Date(startDate.getFullYear(), startDate.getMonth() + index, 1);
+      label = date.toLocaleDateString([], { month: 'short' });
+    }
+    return { key: date.toISOString(), label, created: 0, closed: 0 };
+  });
+
+  function getBucketIndex(value: string): number {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return -1;
+    const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (day < startDate || day > todayStart) return -1;
+
+    if (period === '7d') {
+      return Math.floor((day.getTime() - startDate.getTime()) / 86400000);
+    }
+    if (period === '30d') {
+      return Math.min(4, Math.floor((day.getTime() - startDate.getTime()) / (6 * 86400000)));
+    }
+    return (date.getFullYear() - startDate.getFullYear()) * 12 + date.getMonth() - startDate.getMonth();
+  }
+
+  for (const item of cases.value) {
+    if (item.createdAt) {
+      const createdIndex = getBucketIndex(item.createdAt);
+      if (createdIndex >= 0 && buckets[createdIndex]) buckets[createdIndex].created += 1;
+    }
+    const closedDate = getCaseClosedDate(item);
+    if (closedDate) {
+      const closedIndex = getBucketIndex(closedDate);
+      if (closedIndex >= 0 && buckets[closedIndex]) buckets[closedIndex].closed += 1;
+    }
+  }
+
+  return buckets;
+});
+
+const chartTotals = computed(() => caseActivityBuckets.value.reduce(
+  (totals, bucket) => ({
+    created: totals.created + bucket.created,
+    closed: totals.closed + bucket.closed
+  }),
+  { created: 0, closed: 0 }
+));
+
+const chartMax = computed(() => Math.max(
+  1,
+  ...caseActivityBuckets.value.flatMap(bucket => [bucket.created, bucket.closed])
+));
+
+const chartHasActivity = computed(() => chartTotals.value.created + chartTotals.value.closed > 0);
+
+function chartBarHeight(value: number): string {
+  return value ? `${Math.max(5, (value / chartMax.value) * 100)}%` : '0%';
+}
 
 // User search for case creation
 function searchUsers() {
@@ -1369,5 +1624,278 @@ function selectConversation(msg: Message) {
   .notification-meta {
     font-size: 0.75rem;
   }
+}
+
+/* Dashboard analytics and personal recent-case panels */
+.dashboard-insights {
+  align-items: stretch;
+}
+
+.insight-panel {
+  height: 100%;
+  min-height: 340px;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5eaf1;
+  border-radius: 1.2rem;
+  box-shadow: 0 8px 28px rgba(30, 52, 86, 0.07);
+}
+
+.insight-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.insight-eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.insight-panel-heading h3 {
+  margin: 0;
+  color: #172b4d;
+  font-size: 1.2rem;
+  font-weight: 750;
+}
+
+.insight-panel-heading p {
+  margin: 0.35rem 0 0;
+  color: #718096;
+  font-size: 0.82rem;
+}
+
+.chart-period-select {
+  width: auto;
+  min-width: 135px;
+  border-color: #dbe3ed;
+  border-radius: 0.65rem;
+  color: #334155;
+  font-size: 0.78rem;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  margin-top: 1.25rem;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.chart-legend-dot {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  border-radius: 3px;
+}
+
+.chart-created { background: #3768d8; }
+.chart-closed { background: #13a783; }
+
+.case-activity-chart {
+  display: flex;
+  gap: 0.75rem;
+  height: 220px;
+  margin-top: 1.1rem;
+}
+
+.chart-axis-labels {
+  display: flex;
+  flex: 0 0 24px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 0 1.65rem;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  text-align: right;
+}
+
+.chart-plot {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  gap: 0.45rem;
+  padding: 0 0.25rem;
+  border-bottom: 1px solid #dce4ee;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(25% - 1px),
+    #edf1f6 calc(25% - 1px),
+    #edf1f6 25%
+  );
+}
+
+.chart-column {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.chart-bars {
+  display: flex;
+  height: 185px;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+}
+
+.chart-bar {
+  display: block;
+  width: min(36%, 18px);
+  min-height: 0;
+  border-radius: 5px 5px 0 0;
+  transition: height 0.25s ease;
+}
+
+.chart-bar.chart-created { background: linear-gradient(180deg, #5e87e8, #3768d8); }
+.chart-bar.chart-closed { background: linear-gradient(180deg, #45c6a4, #13a783); }
+
+.chart-column small {
+  overflow: hidden;
+  color: #8794a7;
+  font-size: 0.65rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-empty-state {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: #8b98a9;
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.chart-empty-state i {
+  color: #91a7c6;
+  font-size: 2rem;
+}
+
+.chart-empty-state strong {
+  color: #52647d;
+  font-size: 0.95rem;
+}
+
+.chart-empty-state span {
+  max-width: 300px;
+}
+
+.recent-heading-icon {
+  color: #8093ad;
+  font-size: 1.35rem;
+}
+
+.recent-case-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 1.4rem;
+}
+
+.recent-case-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  place-items: center;
+  border-radius: 14px;
+  background: #edf3ff;
+  color: #3768d8;
+  font-size: 1.4rem;
+}
+
+.recent-case-reference {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.recent-case-content h4 {
+  margin: 0.35rem 0 0.65rem;
+  color: #172b4d;
+  font-size: 1.05rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.recent-case-status {
+  display: inline-flex;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.recent-case-status.is-open {
+  background: #e7f8f1;
+  color: #0c8b65;
+}
+
+.recent-case-status.is-closed {
+  background: #eef1f5;
+  color: #64748b;
+}
+
+.recent-case-visited {
+  margin-top: 0.8rem;
+  color: #8492a6;
+  font-size: 0.72rem;
+}
+
+.recent-case-empty {
+  display: flex;
+  min-height: 230px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  color: #8492a6;
+  text-align: center;
+  font-size: 0.82rem;
+}
+
+.recent-case-empty > i {
+  color: #91a7c6;
+  font-size: 2rem;
+}
+
+.recent-case-empty strong {
+  color: #52647d;
+  font-size: 0.95rem;
+}
+
+.recent-case-empty span {
+  max-width: 230px;
+}
+
+@media (max-width: 575px) {
+  .insight-panel { padding: 1.1rem; }
+  .insight-panel-heading { flex-direction: column; }
+  .chart-period-select { width: 100%; }
+  .chart-plot { gap: 0.25rem; }
+  .chart-bars { gap: 2px; }
 }
 </style>
