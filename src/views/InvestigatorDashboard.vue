@@ -1031,10 +1031,17 @@ async function submitCase() {
     // Add new case to list
     cases.value.push(res.data);
     
-    // Add notification
+    // Make the newly created group room discoverable from Messages.
     const caseId = res.data.caseId || `Case #${res.data.number}`;
+    window.dispatchEvent(new CustomEvent('dess-case-created', {
+      detail: { caseId: res.data._id, caseChatId: res.data.caseChat?._id, caseNumber }
+    }));
     if ((window as any).addNavNotification) {
-      (window as any).addNavNotification('✨ New Case Created', `"${newCase.value.name}" has been successfully created`, 'success');
+      (window as any).addNavNotification(
+        '✨ New Case Created',
+        `"${newCase.value.name}" is ready. Its group chat is available in Messages → Case rooms.`,
+        'success'
+      );
     }
     
     // Reset form
