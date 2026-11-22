@@ -4,34 +4,17 @@
     <!-- Header -->
     <header id="header" class="header d-flex align-items-center fixed-top">
       <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
-        <a href="index.html" class="logo d-flex align-items-center">
+        <a href="#" @click.prevent="scrollToSection('hero')" class="logo d-flex align-items-center">
           <h1 class="sitename">DESS</h1>
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>
-            <li><a href="#hero" class="active">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#features">Features</a></li>
-            <li class="dropdown"><a href="#"><span>Career Paths</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-              <ul>
-                <li><a href="https://www.sans.org/cyber-security-courses/advanced-incident-response-threat-hunting-training/" target="_blank">Digital Forensics Investigator</a></li>
-                <li><a href="https://www.coursera.org/professional-certificates/google-cybersecurity" target="_blank">Cybersecurity Analyst</a></li>
-                <li><a href="https://www.eccouncil.org/train-certify/certified-incident-handler-ecih/" target="_blank">Incident Response Specialist</a></li>
-                <li><a href="https://www.sans.org/cyber-security-courses/reverse-engineering-malware-malware-analysis-tools-techniques/" target="_blank">Malware Analyst</a></li>
-                <li class="dropdown"><a href="#"><span>Specialized Courses</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
-                  <ul>
-                    <li><a href="https://www.sans.org/cyber-security-courses/advanced-smartphone-mobile-device-forensics/" target="_blank">Mobile Device Forensics</a></li>
-                    <li><a href="https://www.sans.org/cyber-security-courses/network-forensics/" target="_blank">Network Forensics</a></li>
-                    <li><a href="https://www.udemy.com/course/cloud-forensics/" target="_blank">Cloud Forensics</a></li>
-                    <li><a href="https://www.memoryanalysis.net/memory-forensics-training" target="_blank">Memory Analysis</a></li>
-                    <li><a href="https://www.infosecinstitute.com/courses/computer-forensics-boot-camp/" target="_blank">Cryptography & Data Recovery</a></li>
-                  </ul>
-                </li>
-                <li><a href="https://iacis.com/certification-2/" target="_blank">Evidence Handling Certification</a></li>
-                <li><a href="https://www.evidencemanagement.com/training/" target="_blank">Chain of Custody Training</a></li>
-              </ul>
-            </li>
-            <li><a href="#contact">Contact</a></li>
+            <li><a href="#" data-scroll-target="hero" class="active" @click.prevent="scrollToSection('hero')">Home</a></li>
+            <li><a href="#" data-scroll-target="about" @click.prevent="scrollToSection('about')">About DESS</a></li>
+            <li><a href="#" data-scroll-target="how-it-works" @click.prevent="scrollToSection('how-it-works')">How It Works</a></li>
+            <li><a href="#" data-scroll-target="features" @click.prevent="scrollToSection('features')">Features</a></li>
+            <li><a href="#" data-scroll-target="audience" @click.prevent="scrollToSection('audience')">Who It's For</a></li>
+            <li><a href="#" data-scroll-target="faq" @click.prevent="scrollToSection('faq')">FAQs</a></li>
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
@@ -41,25 +24,27 @@
     <!-- Hero Section -->
     <section id="hero" class="hero section py-5 bg-dark text-white">
       <div class="container">
-        <div class="row align-items-center">
-          <div class="col-lg-6">
+        <div class="row align-items-center gy-4">
+          <div class="col-lg-7">
+            <p class="text-success fw-semibold text-uppercase mb-3" style="letter-spacing: .12em; font-size: .78rem;">Case-based digital forensics research</p>
             <h1 class="display-4 fw-bold">Digital Evidence <span class="text-success">Storage System</span></h1>
-            <p class="lead">A secure platform designed to store, manage, and access digital evidence for investigative purposes.</p>
-            <div class="d-flex gap-3 mt-4">
+            <p class="lead">Bring cases, evidence and documented findings together. DESS is a research and collaboration workspace for cybersecurity and digital-forensics students, researchers and practitioners.</p>
+            <div class="d-flex flex-wrap gap-3 mt-4">
+              <button class="btn btn-success btn-lg" @click="showAuth = true">Get Started <i class="bi bi-arrow-right ms-1"></i></button>
+              <a href="#" @click.prevent="scrollToSection('how-it-works')" class="btn btn-outline-light btn-lg">Explore How It Works</a>
             </div>
-            <div class="d-flex gap-3 mt-3">
-              <button class="btn btn-success btn-lg" @click="showAuth = true">Get Started</button>
-              
+            <div class="d-flex flex-wrap gap-3 mt-4 small text-white-50">
+              <span><i class="bi bi-folder-check text-success me-1"></i> Case-centred records</span>
+              <span><i class="bi bi-fingerprint text-success me-1"></i> Evidence integrity checks</span>
+              <span><i class="bi bi-people text-success me-1"></i> Research collaboration</span>
             </div>
-  <!-- Scroll Top -->
-  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
           </div>
-          <div class="col-lg-6 text-center">
-            <img src="/img/hero-img.png" class="img-fluid animated" alt="Hero" style="max-height: 320px;" />
+          <div class="col-lg-5 text-center">
+            <img src="/img/hero-img.png" class="img-fluid animated" alt="Digital evidence and case research illustration" style="max-height: 340px;" />
           </div>
         </div>
       </div>
-  <LoginModal v-if="showAuth" @close="showAuth = false" />
+      <LoginModal v-if="showAuth" @close="showAuth = false" />
     </section>
 
     <!-- About Section -->
@@ -67,39 +52,39 @@
       <div class="container">
         <div class="row align-items-center">
           <div class="col-xl-5 mb-4 mb-xl-0">
-            <h3>About DESS</h3>
-            <h2>Why Choose Our System?</h2>
-            <p>The Digital Evidence Storage System (DESS) ensures the integrity, confidentiality, and accessibility of digital evidence while maintaining strict access control and audit logs.</p>
-            <a href="#features" class="btn btn-link text-success">Explore Features <i class="bi bi-arrow-right"></i></a>
+            <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">About DESS</p>
+            <h2 class="fw-bold">A connected view of every case.</h2>
+            <p class="text-muted">Digital-forensics knowledge can be scattered across case notes, evidence files and individual teams. DESS brings case records, linked evidence, metadata and case updates into one searchable workspace, helping people learn from previous work and collaborate with the right context.</p>
+            <a href="#" @click.prevent="scrollToSection('how-it-works')" class="btn btn-link text-success px-0">See how DESS works <i class="bi bi-arrow-right"></i></a>
           </div>
           <div class="col-xl-7">
             <div class="row g-4">
               <div class="col-md-6">
-                <div class="p-3 border rounded-3 h-100">
-                  <i class="bi bi-shield-lock fs-2 text-success"></i>
-                  <h5 class="mt-2">Secure & Tamper-Proof</h5>
-                  <p class="mb-0">Advanced cryptographic techniques ensure data integrity with role-based access control and multi-factor authentication.</p>
+                <div class="p-4 border rounded-3 h-100">
+                  <i class="bi bi-folder2-open fs-2 text-success"></i>
+                  <h5 class="mt-3">Case-centred records</h5>
+                  <p class="mb-0 text-muted">Keep case identifiers, descriptions, team details, evidence and updates connected in a single case record.</p>
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="p-3 border rounded-3 h-100">
-                  <i class="bi bi-folder-check fs-2 text-success"></i>
-                  <h5 class="mt-2">Case Management</h5>
-                  <p class="mb-0">Organize digital evidence files under specific cases and enable authorized DESS users to collaborate effectively.</p>
+                <div class="p-4 border rounded-3 h-100">
+                  <i class="bi bi-fingerprint fs-2 text-success"></i>
+                  <h5 class="mt-3">Evidence with context</h5>
+                  <p class="mb-0 text-muted">Associate files with evidence descriptions, classifications and SHA-256 hashes for integrity verification.</p>
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="p-3 border rounded-3 h-100">
-                  <i class="bi bi-clock-history fs-2 text-success"></i>
-                  <h5 class="mt-2">Audit Trail</h5>
-                  <p class="mb-0">Comprehensive logs of all activities with time-stamped records for legal and forensic purposes.</p>
+                <div class="p-4 border rounded-3 h-100">
+                  <i class="bi bi-journal-text fs-2 text-success"></i>
+                  <h5 class="mt-3">Documented case activity</h5>
+                  <p class="mb-0 text-muted">Record case updates and review time-stamped activity so that important context does not get lost.</p>
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="p-3 border rounded-3 h-100">
-                  <i class="bi bi-database-check fs-2 text-success"></i>
-                  <h5 class="mt-2">Data Redundancy</h5>
-                  <p class="mb-0">Secure backup solutions and reliable data recovery mechanisms to prevent evidence loss.</p>
+                <div class="p-4 border rounded-3 h-100">
+                  <i class="bi bi-people fs-2 text-success"></i>
+                  <h5 class="mt-3">Controlled collaboration</h5>
+                  <p class="mb-0 text-muted">Use role-based access, researcher-approved evidence sharing and case-team messaging to collaborate responsibly.</p>
                 </div>
               </div>
             </div>
@@ -111,43 +96,74 @@
     <!-- Features Section -->
     <section id="features" class="features section py-5 bg-light">
       <div class="container">
+        <div class="text-center mb-4">
+          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Platform capabilities</p>
+          <h2 class="fw-bold">Everything stays connected to the case.</h2>
+          <p class="text-muted mx-auto" style="max-width: 680px;">DESS helps users move from locating a case to understanding its evidence and collaborating around its context.</p>
+        </div>
         <div class="row g-4">
           <div class="col-md-3 col-6" v-for="feature in features" :key="feature.title">
-            <div class="text-center p-3 border rounded-3 h-100">
+            <div class="text-center p-4 border rounded-3 bg-white h-100">
               <i :class="feature.icon + ' fs-1 text-success'"></i>
-              <h6 class="mt-2">{{ feature.title }}</h6>
+              <h6 class="mt-3 mb-0">{{ feature.title }}</h6>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Stats Section -->
-    <section id="stats" class="stats section py-5 bg-white">
+    <!-- Audience Section -->
+    <section id="audience" class="py-5 bg-white">
       <div class="container">
-        <div class="row g-4 text-center">
-          <div class="col-md-3 col-6" v-for="stat in stats" :key="stat.label">
-            <i :class="stat.icon + ' fs-1 text-success'"></i>
-            <div class="fs-2 fw-bold">{{ stat.value }}</div>
-            <div class="text-muted">{{ stat.label }}</div>
-          </div>
+        <div class="text-center mb-4">
+          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Who DESS is for</p>
+          <h2 class="fw-bold">Built for people who work with digital evidence.</h2>
         </div>
-      </div>
-    </section>
-
-    <!-- Details Section -->
-    <section id="details" class="details section py-5 bg-light">
-      <div class="container">
-        <h2 class="mb-4">How It Works</h2>
         <div class="row g-4">
-          <div class="col-md-4" v-for="detail in details" :key="detail.title">
-            <div class="p-3 border rounded-3 h-100">
-              <img :src="detail.img" class="img-fluid mb-3" alt="" />
+          <div class="col-md-4">
+            <article class="p-4 border rounded-3 h-100">
+              <i class="bi bi-mortarboard fs-2 text-success"></i>
+              <h5 class="mt-3">Students</h5>
+              <p class="text-muted mb-0">Explore structured case examples, understand how evidence relates to an investigation and strengthen practical digital-forensics learning.</p>
+            </article>
+          </div>
+          <div class="col-md-4">
+            <article class="p-4 border rounded-3 h-100">
+              <i class="bi bi-search fs-2 text-success"></i>
+              <h5 class="mt-3">Researchers</h5>
+              <p class="text-muted mb-0">Search archived cases, compare related case records and review evidence that has been approved for research access.</p>
+            </article>
+          </div>
+          <div class="col-md-4">
+            <article class="p-4 border rounded-3 h-100">
+              <i class="bi bi-shield-check fs-2 text-success"></i>
+              <h5 class="mt-3">Practitioners</h5>
+              <p class="text-muted mb-0">Organize case evidence, record updates, work with assigned teams and preserve useful investigative context.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="details section py-5 bg-light">
+      <div class="container">
+        <div class="text-center mb-4">
+          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">A simple workflow</p>
+          <h2 class="fw-bold">From case discovery to collaboration.</h2>
+        </div>
+        <div class="row g-4">
+          <div class="col-md-4" v-for="(detail, index) in details" :key="detail.title">
+            <article class="p-4 border rounded-3 bg-white h-100">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <i :class="detail.icon + ' fs-2 text-success'"></i>
+                <span class="text-muted fw-bold">0{{ index + 1 }}</span>
+              </div>
               <h5>{{ detail.title }}</h5>
-              <ul class="list-unstyled">
-                <li v-for="item in detail.items" :key="item"><i class="bi bi-check text-success me-2"></i>{{ item }}</li>
+              <ul class="list-unstyled mb-0">
+                <li v-for="item in detail.items" :key="item" class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ item }}</li>
               </ul>
-            </div>
+            </article>
           </div>
         </div>
       </div>
@@ -156,144 +172,105 @@
     <!-- FAQ Section -->
     <section id="faq" class="faq section py-5 bg-white">
       <div class="container">
-        <h3 class="mb-4">Frequently Asked Questions</h3>
-        <div class="accordion" id="faqAccordion">
+        <div class="text-center mb-4">
+          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Good to know</p>
+          <h2 class="fw-bold">Frequently asked questions.</h2>
+        </div>
+        <div class="accordion mx-auto" id="faqAccordion" style="max-width: 900px;">
           <div class="accordion-item" v-for="(faq, idx) in faqs" :key="faq.q">
             <h2 class="accordion-header" :id="'heading' + idx">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" :data-bs-target="'#collapse' + idx" aria-expanded="false" :aria-controls="'collapse' + idx">
-                <i class="bi bi-question-circle me-2"></i>{{ faq.q }}
+                <i class="bi bi-question-circle me-2 text-success"></i>{{ faq.q }}
               </button>
             </h2>
             <div :id="'collapse' + idx" class="accordion-collapse collapse" :aria-labelledby="'heading' + idx" data-bs-parent="#faqAccordion">
-              <div class="accordion-body">{{ faq.a }}</div>
+              <div class="accordion-body text-muted">{{ faq.a }}</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Contact Section -->
-    <section id="contact" class="contact section py-5 bg-light">
-      <div class="container">
-        <h2 class="mb-4">Contact</h2>
-        <form class="row g-3">
-          <div class="col-md-6">
-            <input type="text" class="form-control" placeholder="Your Name" required />
-          </div>
-          <div class="col-md-6">
-            <input type="email" class="form-control" placeholder="Your Email" required />
-          </div>
-          <div class="col-12">
-            <input type="text" class="form-control" placeholder="Subject" required />
-          </div>
-          <div class="col-12">
-            <textarea class="form-control" rows="4" placeholder="Message" required></textarea>
-          </div>
-          <div class="col-12 text-center">
-            <button type="submit" class="btn btn-success">Send Message</button>
-          </div>
-        </form>
+    <!-- Access / Call to Action -->
+    <section id="access" class="py-5 bg-dark text-white">
+      <div class="container text-center">
+        <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Start exploring</p>
+        <h2 class="fw-bold">Make every case a learning opportunity.</h2>
+        <p class="lead text-white-50 mx-auto mt-3" style="max-width: 760px;">Explore documented case records, review researcher-approved evidence and connect with the DESS community through a shared workspace.</p>
+        <button class="btn btn-success btn-lg mt-3" @click="showAuth = true">Get Started <i class="bi bi-arrow-right ms-1"></i></button>
       </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer py-4 bg-dark text-white mt-5">
+    <footer class="footer py-4 bg-dark text-white">
       <div class="container text-center">
-        <p class="mb-1">&copy; <span>{{ new Date().getFullYear() }}</span> <strong class="sitename">DESS</strong> All Rights Reserved</p>
-        <div class="mb-2">
-          <a href="#" class="text-white me-3"><i class="bi bi-twitter-x"></i></a>
-          <a href="#" class="text-white me-3"><i class="bi bi-facebook"></i></a>
-          <a href="#" class="text-white me-3"><i class="bi bi-instagram"></i></a>
-          <a href="#" class="text-white"><i class="bi bi-linkedin"></i></a>
-        </div>
-        <small>Designed by <a href="#" class="text-success">@DESS</a></small>
+        <p class="mb-2"><strong class="sitename">DESS</strong> · Digital Evidence Storage System</p>
+        <small class="d-block text-white-50">A case-based research and collaboration workspace for cybersecurity and digital forensics.</small>
+        <small class="d-block text-white-50 mt-2">&copy; {{ new Date().getFullYear() }} DESS. For research and collaboration; not a replacement for official evidence-handling or court procedures.</small>
       </div>
     </footer>
   </div>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import LoginModal from '../components/LoginModal.vue';
-import TypeIt from 'typeit';
 
 const features = [
-  { icon: 'bi bi-shield-check', title: 'Secure Storage' },
-  { icon: 'bi bi-fingerprint', title: 'Access Control' },
-  { icon: 'bi bi-folder-symlink', title: 'Case Management' },
-  { icon: 'bi bi-key', title: 'Integrity Checks' },
-  { icon: 'bi bi-clock-history', title: 'Audit Logs' },
-  { icon: 'bi bi-people', title: 'Collaboration' },
-  { icon: 'bi bi-database-fill-check', title: 'Data Backup' },
-  { icon: 'bi bi-file-earmark-lock', title: 'File Security' },
-];
-const stats = [
-  { icon: 'bi bi-folder-check', value: 500, label: 'Cases Managed' },
-  { icon: 'bi bi-file-earmark-check', value: 10000, label: 'Evidence Files' },
-  { icon: 'bi bi-people', value: 250, label: 'Active DESS Users' },
-  { icon: 'bi bi-shield-check', value: 100, label: 'Security Score' },
+  { icon: 'bi bi-search', title: 'Case Search & Discovery' },
+  { icon: 'bi bi-folder-check', title: 'Case-linked Evidence' },
+  { icon: 'bi bi-journal-text', title: 'Documented Case Updates' },
+  { icon: 'bi bi-diagram-3', title: 'Related-case Discovery' },
+  { icon: 'bi bi-fingerprint', title: 'SHA-256 Integrity Checks' },
+  { icon: 'bi bi-shield-lock', title: 'Role-based Access' },
+  { icon: 'bi bi-clock-history', title: 'Activity & Audit Trails' },
+  { icon: 'bi bi-chat-square-text', title: 'Case-team Messaging' },
 ];
 const details = [
   {
-    img: '/img/details-1.png',
-    title: 'User Authentication & Case Creation',
+    icon: 'bi bi-search',
+    title: 'Find a case',
     items: [
-      'DESS users sign in using secure credentials and MFA',
-      'Create cases with unique identifiers',
-      'Manage authorized DESS users and their permissions',
+      'Search case records using identifiers, descriptions and keywords',
+      'Explore relevant archived cases and related case records',
+      'Review case classifications and available context',
     ],
   },
   {
-    img: '/img/details-2.png',
-    title: 'Evidence Upload & Verification',
+    icon: 'bi bi-folder2-open',
+    title: 'Review evidence and updates',
     items: [
-      'Files are stored with unique hash values for verification',
-      'Every action is logged for accountability',
-      'Data integrity through advanced cryptographic techniques',
+      'Keep evidence files linked to the case they belong to',
+      'Review file descriptions, metadata and SHA-256 hashes',
+      'Follow case updates and the recorded activity history',
     ],
   },
   {
-    img: '/img/details-3.png',
-    title: 'Collaboration & Tracking',
+    icon: 'bi bi-people',
+    title: 'Collaborate with context',
     items: [
-      'Authorized DESS users can collaborate on the same case',
-      'Track all activities with comprehensive audit logs',
-      'Maintain chain of custody for legal compliance',
+      'Share selected evidence with authorized research accounts',
+      'Use internal messages and case-team discussion rooms',
+      'Contact the case lead when a relevant case is still open',
     ],
   },
 ];
 const faqs = [
-  { q: 'How secure is the evidence storage?', a: 'All evidence is encrypted and access is strictly controlled with audit logs.' },
-  { q: 'Can multiple DESS users collaborate on a case?', a: 'Yes, the system supports collaboration and role-based permissions.' },
-  { q: 'How is data integrity ensured?', a: 'Cryptographic hashes and audit trails ensure all evidence is tamper-proof.' },
+  { q: 'What is DESS?', a: 'DESS is a case-based digital evidence research and collaboration platform. It connects case records with related evidence, metadata, case updates and team communication.' },
+  { q: 'Who is DESS designed for?', a: 'DESS is intended for cybersecurity and digital-forensics students, researchers and authorized practitioners who need to study, document or collaborate around digital evidence.' },
+  { q: 'Can researchers view every case and every file?', a: 'No. Research access is permission-controlled. Researchers can browse closed case records and only the evidence files that have been approved for research access.' },
+  { q: 'Can I ask about a related case that is still open?', a: 'When a search identifies a relevant open case, the repository can provide a way to contact the case lead through DESS internal messaging. The open case evidence itself remains restricted.' },
+  { q: 'How does DESS support evidence integrity?', a: 'Evidence records include SHA-256 hashes that can be used for file-integrity verification. DESS also maintains time-stamped activity records for supported case actions.' },
+  { q: 'Does DESS determine whether evidence is admissible in court?', a: 'No. DESS supports evidence organization, research and collaboration. Legal admissibility and official evidence-handling requirements remain subject to the relevant laws, policies and procedures.' },
 ];
 
 const showAuth = ref(false);
-const typeHeading = ref<HTMLElement | null>(null);
-const typeParagraph = ref<HTMLElement | null>(null);
 
-onMounted(() => {
-  if (typeHeading.value) {
-    new TypeIt(typeHeading.value, {
-      speed: 60,
-      waitUntilVisible: true,
-    })
-      .type('Digital Evidence ')
-      .pause(300)
-      .type('<span class="text-success">Storage System</span>')
-      .go();
-  }
-  if (typeParagraph.value) {
-    new TypeIt(typeParagraph.value, {
-      speed: 40,
-      waitUntilVisible: true,
-      startDelay: 1800,
-    })
-      .type('A secure platform designed to store, manage, and access digital evidence for investigative purposes.')
-      .go();
-  }
-});
-function goHome() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+function scrollToSection(id: string) {
+  const section = document.getElementById(id);
+  if (!section) return;
+  const margin = Number.parseInt(getComputedStyle(section).scrollMarginTop || '0', 10) || 0;
+  const top = section.getBoundingClientRect().top + window.scrollY - margin;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
 </script>

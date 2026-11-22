@@ -187,8 +187,9 @@
 
   function navmenuScrollspy() {
     navmenulinks.forEach(navmenulink => {
-      if (!navmenulink.hash || navmenulink.hash.startsWith('#/')) return;
-      const section = getPageSectionFromHash(navmenulink.hash);
+      const targetId = navmenulink.dataset.scrollTarget;
+      if (!targetId && (!navmenulink.hash || navmenulink.hash.startsWith('#/'))) return;
+      const section = targetId ? document.getElementById(targetId) : getPageSectionFromHash(navmenulink.hash);
       if (!section) return;
       let position = window.scrollY + 200;
       if (position >= section.offsetTop && position <= (section.offsetTop + section.offsetHeight)) {
