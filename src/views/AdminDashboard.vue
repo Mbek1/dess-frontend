@@ -126,9 +126,14 @@ async function loadDashboardStats() {
   }
 }
 
-function logout() {
+async function logout() {
+  try {
+    await axios.post('/api/auth/logout');
+  } catch (error) {
+    console.warn('Could not revoke administrator session during logout:', error);
+  }
   sessionStorage.clear();
-  router.push('/');
+  await router.push('/');
 }
 
 onMounted(() => {
