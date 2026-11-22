@@ -453,7 +453,8 @@ function handleSettingsUpdated() {
 }
 
 function syncViewport() {
-  isSmallScreen.value = window.matchMedia?.('(max-width: 760px)').matches ?? window.innerWidth <= 760;
+  const mediaQueryMatches = window.matchMedia?.('(max-width: 760px)').matches === true;
+  isSmallScreen.value = mediaQueryMatches || window.innerWidth <= 760;
   if (!isSmallScreen.value) mobileDetailsOpen.value = false;
 }
 
