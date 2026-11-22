@@ -1,5 +1,5 @@
 <template>
-  <main class="researcher-page">
+  <main class="researcher-page" :class="{ 'compact-list-view': compactLists }">
     <header class="repository-header">
       <div class="brand-mark"><i class="bi bi-archive-fill" aria-hidden="true"></i></div>
       <div class="repository-title">
@@ -40,7 +40,7 @@
         <input id="case-search" v-model="search" type="search" placeholder="Search by case ID, name, or description" @input="scheduleSearch" />
         <kbd>/</kbd>
       </label>
-      <label class="sort-control" for="case-sort"><span>Sort by</span><select id="case-sort" v-model="sortBy" @change="loadCases"><option value="createdAt">Date created</option><option value="name">Case name</option><option value="caseId">Case ID</option></select></label>
+      <label class="sort-control" for="case-sort"><span>Sort by</span><select id="case-sort" v-model="sortBy" @change="currentPage = 1; loadCases()"><option value="createdAt">Date created</option><option value="name">Case name</option><option value="caseId">Case ID</option></select></label>
       <label class="sort-control order-control" for="case-order"><span>Order</span><select id="case-order" v-model="sortOrder" @change="loadCases"><option value="desc">Newest first</option><option value="asc">Oldest first</option></select></label>
     </section>
 
@@ -53,7 +53,7 @@
         <table class="case-table">
           <thead><tr><th>Case</th><th>Classification</th><th>Evidence access</th><th>Archived</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
           <tbody>
-            <tr v-for="caseItem in filteredCases" :key="caseItem._id">
+            <tr v-for="caseItem in paginatedCases" :key="caseItem._id">
               <td class="case-cell"><strong>{{ caseItem.caseId || `Case ${caseItem.number}` }}</strong><span>{{ caseItem.name }}</span><small>{{ caseItem.description }}</small></td>
               <td><span class="case-type">{{ capitalizeCase(caseItem.caseType) }}</span></td>
               <td><div class="access-counts"><span class="shared-count"><i class="bi bi-file-earmark-check" aria-hidden="true"></i>{{ sharedCount(caseItem) }} shared</span><span class="restricted-count"><i class="bi bi-lock" aria-hidden="true"></i>{{ restrictedCount(caseItem) }} restricted</span></div></td>
@@ -63,6 +63,14 @@
           </tbody>
         </table>
       </div>
+      <nav v-if="totalPages > 1" class="repository-pagination" aria-label="Repository pages">
+        <span>Showing {{ (currentPage - 1) * itemsPerPage + 1 }}–{{ Math.min(currentPage * itemsPerPage, filteredCases.length) }} of {{ filteredCases.length }} cases</span>
+        <div class="pagination-actions">
+          <button type="button" :disabled="currentPage === 1" @click="currentPage--"><i class="bi bi-chevron-left" aria-hidden="true"></i> Previous</button>
+          <span>Page {{ currentPage }} of {{ totalPages }}</span>
+          <button type="button" :disabled="currentPage === totalPages" @click="currentPage++">Next <i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+        </div>
+      </nav>
     </section>
 
     <div v-if="selectedCase" class="dialog-backdrop" @click.self="selectedCase = null">
@@ -146,17 +154,42 @@ const showNotifications = ref(false);
 const notifications = ref<NotificationRecord[]>([]);
 const notificationsLoading = ref(false);
 const unreadNotifications = ref(0);
+const itemsPerPage = ref(20);
+const currentPage = ref(1);
+const compactLists = ref(false);
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 let refreshTimer: ReturnType<typeof setInterval> | undefined;
 
 const getToken = () => sessionStorage.getItem('dess_token') || '';
 const headers = () => ({ Authorization: `Bearer ${getToken()}` });
 const filteredCases = computed(() => allCases.value);
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredCases.value.length / itemsPerPage.value)));
+const paginatedCases = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  return filteredCases.value.slice(start, start + itemsPerPage.value);
+});
 const stats = computed(() => ({
   closedCases: allCases.value.length,
   sharedEvidence: allCases.value.reduce((sum, item) => sum + sharedCount(item), 0),
   restrictedEvidence: allCases.value.reduce((sum, item) => sum + restrictedCount(item), 0)
 }));
+
+function syncUiPreferences() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dess_settings') || '{}');
+    const requestedPageSize = Number(saved.itemsPerPage);
+    itemsPerPage.value = [10, 20, 50].includes(requestedPageSize) ? requestedPageSize : 20;
+    compactLists.value = saved.compactLists === true;
+    currentPage.value = 1;
+  } catch {
+    itemsPerPage.value = 20;
+    compactLists.value = false;
+    currentPage.value = 1;
+  }
+}
+function handleSettingsUpdated() {
+  syncUiPreferences();
+}
 
 function sharedCount(caseItem: CaseRecord) { return caseItem.evidence.filter(item => item.availableToResearchers).length; }
 function restrictedCount(caseItem: CaseRecord) { return caseItem.evidence.filter(item => !item.availableToResearchers).length; }
@@ -182,6 +215,7 @@ function activityTone(kind: string) { return kind.includes('DELETION') ? 'tone-w
 
 function scheduleSearch() {
   if (searchTimer) clearTimeout(searchTimer);
+  currentPage.value = 1;
   searchTimer = setTimeout(() => { void loadCases(); }, 250);
 }
 
@@ -195,6 +229,7 @@ async function loadCases() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to load repository');
     allCases.value = data.closedCases || [];
+    currentPage.value = 1;
     openCaseError.value = data.openCaseFound && search.value.trim() ? data.openCaseFound : null;
   } catch (loadError: any) {
     error.value = loadError?.message || 'Failed to load the research repository.';
@@ -268,6 +303,8 @@ async function contactInvestigator() {
 
 function handleResearcherActivity() { showNotifications.value = true; }
 onMounted(() => {
+  syncUiPreferences();
+  window.addEventListener('dess-settings-updated', handleSettingsUpdated);
   void loadCases();
   void loadNotifications();
   window.addEventListener('open-researcher-notifications', handleResearcherActivity);
@@ -276,6 +313,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer);
   if (refreshTimer) clearInterval(refreshTimer);
+  window.removeEventListener('dess-settings-updated', handleSettingsUpdated);
   window.removeEventListener('open-researcher-notifications', handleResearcherActivity);
 });
 </script>
@@ -390,4 +428,102 @@ onBeforeUnmount(() => {
   .case-table,.case-table tbody,.case-table tr,.case-table td { display: block; width: 100%; }.case-table thead { display: none; }.case-table tr { padding: 8px 10px; border-bottom: 1px solid #173b60; }.case-table td { padding: 5px 2px; border: 0; }.case-cell small { max-width: 100%; }.case-actions { flex-direction: row; }.case-actions button { flex: 1; justify-content: center; }
   .dialog-footer { align-items: stretch; flex-direction: column; }.available-label { display: none; }
 }
+
+
+/* Brighter repository palette with clear case and evidence access states. */
+.researcher-page {
+  --repo-bg: #f1f6f3;
+  --repo-panel: #ffffff;
+  --repo-line: #e1eae4;
+  --repo-text: #20342a;
+  --repo-muted: #718479;
+  padding: 22px clamp(14px, 2.2vw, 32px) 34px;
+  color: var(--repo-text);
+  background: #f1f6f3;
+  background-image: radial-gradient(rgba(31, 131, 83, .045) .8px, transparent .8px);
+  background-size: 18px 18px;
+}
+.brand-mark { border-color: #cce7d8; color: #16865f; background: #e4f4ea; }
+.repository-eyebrow,.section-eyebrow { color: #15966c; }
+.repository-title h1 { color: #1d3327; }
+.repository-title > p:last-child { color: #718479; }
+.activity-button { border-color: #cfe5d7; color: #257553; background: #fff; }
+.activity-button:hover { border-color: #9fd8b7; background: #f4fbf6; }
+.unread-count { color: #fff; background: #18ad78; }
+.repository-stats { border-color: #e0e9e3; border-radius: 10px; background: #fff; box-shadow: 0 6px 20px rgba(35, 75, 50, .045); }
+.stat-item { border-right-color: #edf2ee; }
+.stat-icon { color: #18875f; background: #eaf7ef; }
+.stat-copy small { color: #7c8d82; }
+.stat-copy strong { color: #20392b; }
+.stat-aside { color: #708277; }
+.stat-aside i { color: #18a477; }
+.activity-panel { border-color: #e0e9e3; border-radius: 10px; background: #fff; box-shadow: 0 6px 20px rgba(35, 75, 50, .045); }
+.activity-heading h2,.results-heading h2 { color: #20392b; }
+.icon-button { border-color: #e2ebe5; color: #75867b; background: #fff; }
+.icon-button:hover { color: #13845d; background: #f1faf5; }
+.activity-row { border-top-color: #edf2ee; }
+.activity-copy strong { color: #344a3c; }
+.activity-copy small { color: #77887d; }
+.activity-copy time { color: #91a096; }
+.activity-unread { background: #18b981; }
+.inline-state { color: #839188; }
+.repository-toolbar { border-color: #e0e9e3; border-radius: 10px; background: #fff; box-shadow: 0 5px 16px rgba(35, 75, 50, .04); }
+.case-search { border-color: #e0e9e3; color: #829187; background: #f8fbf9; }
+.case-search input { color: #263a2e; }
+.case-search input::placeholder { color: #9aa89f; }
+.case-search kbd { border-color: #e3ebe6; color: #78877e; background: #fff; }
+.sort-control { color: #728278; }
+.sort-control select { border-color: #dfe9e2; color: #30493a; background: #f9fcfa; }
+.results-heading h2 span { color: #13966c; }
+.results-note { color: #849289; }
+.case-table-wrap { border-color: #e0e9e3; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(35, 75, 50, .045); }
+.case-table th { border-bottom-color: #e9f0eb; color: #829087; background: #f8fbf9; }
+.case-table td { border-bottom-color: #edf2ee; color: #52685a; }
+.case-table tbody tr:hover { background: #fbfefc; }
+.case-cell strong { color: #14845f; }
+.case-cell span { color: #2b4033; }
+.case-cell small { color: #87958b; }
+.case-type { border-color: #dbece1; color: #327653; background: #f0f8f3; }
+.shared-count { color: #16895f; }.restricted-count { color: #87948b; }
+.date-cell { color: #7d8b82 !important; }
+.details-button,.download-button { border-color: #cfe5d7; color: #257553; background: #fff; }
+.details-button:hover { border-color: #a2d8b7; background: #f1faf5; }
+.download-button { border-color: #18ac78; color: #fff; background: #17ad78; }
+.download-button:hover:not(:disabled) { background: #0e9465; }
+.repository-state { border-color: #e0e9e3; border-radius: 10px; color: #819087; background: #fff; }
+.empty-state i { color: #8eb9a0; }.empty-state strong { color: #30463a; }.empty-state span { color: #849289; }
+.dialog-backdrop { background: rgba(19, 39, 28, .48); }
+.case-dialog { border-color: #e1eae4; border-radius: 12px; background: #fff; box-shadow: 0 24px 70px rgba(24, 57, 37, .2); }
+.dialog-header { border-bottom-color: #eaf0ec; background: #f6faf7; }
+.dialog-header h2 { color: #20372a; }.dialog-header p:last-child { color: #718479; }
+.dialog-content { background: #fff; }
+.case-description span { color: #168b64; }.case-description p { color: #52685a; }
+.evidence-heading h3 { color: #30463a; }.access-legend { color: #138a60; }
+.shared-evidence-list { border-top-color: #eaf0ec; }
+.shared-evidence-row { border-bottom-color: #eaf0ec; }
+.evidence-file-icon { color: #18875f; background: #eaf7ef; }
+.shared-evidence-copy strong { color: #354d3f; }.shared-evidence-copy small { color: #819087; }.shared-evidence-copy code { color: #458b68; }
+.available-label { color: #18875f; }
+.restricted-only { border-color: #e1e9e3; color: #78887e; }
+.restricted-summary { border-color: #e4ece6; color: #697b70; background: #f8fbf9; }
+.restricted-summary>i { color: #8a9a90; }.restricted-summary small { color: #87958c; }
+.dialog-footer { border-top-color: #eaf0ec; }.dialog-footer>span { color: #7d8c83; }
+.open-case-status { border-color: #f0e0bf; color: #936d28; background: #fff9ed; }
+.case-manager { border-top-color: #eaf0ec; }.person-initials { border-color: #d1e9da; color: #237b55; background: #e7f5eb; }
+.case-manager strong { color: #30463a; }.case-manager small { color: #7d8d82; }
+.repository-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #e0e9e3; border-top: 0; border-radius: 0 0 10px 10px; color: #819087; background: #fff; font-size: .75rem; }
+.pagination-actions { display: flex; align-items: center; gap: 10px; }
+.pagination-actions span { color: #6f8175; font-size: .7rem; white-space: nowrap; }
+.pagination-actions button { min-height: 32px; padding: 6px 10px; border: 1px solid #d8e8dd; border-radius: 6px; color: #267452; background: #fff; cursor: pointer; font-size: .72rem; font-weight: 650; }
+.pagination-actions button:hover:not(:disabled) { border-color: #9fd5b4; background: #f1faf5; }
+.pagination-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.compact-list-view .case-table td { padding-top: 7px; padding-bottom: 7px; }
+.compact-list-view .case-table th { padding-top: 8px; padding-bottom: 8px; }
+
+@media (max-width: 650px) {
+  .repository-pagination { align-items: flex-start; flex-direction: column; }
+  .pagination-actions { width: 100%; justify-content: space-between; }
+  .stat-item { border-color: #edf2ee !important; }
+}
+
 </style>
