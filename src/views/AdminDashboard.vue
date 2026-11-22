@@ -57,6 +57,7 @@
           <AdminAuditLogs v-show="currentModule === 'audit'" />
           <AdminReporting v-show="currentModule === 'reporting'" />
           <AdminSystemSettings v-show="currentModule === 'settings'" />
+          <AdminAccessReview v-show="currentModule === 'access'" />
         </div>
       </section>
     </template>
@@ -75,6 +76,7 @@ import AdminCaseOversight from '@/components/admin/AdminCaseOversight.vue';
 import AdminAuditLogs from '@/components/admin/AdminAuditLogs.vue';
 import AdminReporting from '@/components/admin/AdminReporting.vue';
 import AdminSystemSettings from '@/components/admin/AdminSystemSettings.vue';
+import AdminAccessReview from '@/components/admin/AdminAccessReview.vue';
 
 const router = useRouter();
 const currentModule = ref('dashboard');
@@ -93,7 +95,8 @@ const navItems = [
   { id: 'feedback', label: 'Feedback inbox', icon: 'chat-square-heart' },
   { id: 'audit', label: 'Audit records', icon: 'journal-text' },
   { id: 'reporting', label: 'Reports', icon: 'file-earmark-bar-graph' },
-  { id: 'settings', label: 'System settings', icon: 'sliders' }
+  { id: 'settings', label: 'System settings', icon: 'sliders' },
+  { id: 'access', label: 'Access review', icon: 'person-check' }
 ];
 
 const moduleDescriptions: Record<string, string> = {
@@ -104,7 +107,8 @@ const moduleDescriptions: Record<string, string> = {
   feedback: 'Review user submissions and track their resolution status.',
   audit: 'Search recorded administrative and system events.',
   reporting: 'Generate operational and compliance reports.',
-  settings: 'Configure system-wide settings.'
+  settings: 'Configure system-wide settings.',
+  access: 'Review account privileges, active sessions and access changes.'
 };
 
 function getModuleTitle() { return navItems.find(item => item.id === currentModule.value)?.label || 'Overview'; }
