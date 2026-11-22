@@ -332,7 +332,9 @@ function authConfig() {
 }
 
 function resolveProfilePicture(url: string) {
-  if (url.startsWith('/uploads/')) return `${API_CONFIG.baseURL}${url}`;
+  if (url.startsWith('/api/') || url.startsWith('/uploads/')) {
+    return `${API_CONFIG.baseURL}${url}`;
+  }
   return url || fallbackAvatar;
 }
 
