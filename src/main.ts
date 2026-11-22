@@ -29,6 +29,15 @@ window.addEventListener('dess-settings-updated', applySavedTheme)
 window.addEventListener('storage', (event) => {
     if (event.key === 'dess_settings') applySavedTheme()
 })
+const systemThemeQuery = window.matchMedia?.('(prefers-color-scheme: dark)')
+systemThemeQuery?.addEventListener?.('change', () => {
+    try {
+        const saved = JSON.parse(localStorage.getItem('dess_settings') || '{}')
+        if (saved.theme === 'system' || saved.theme === 'auto') applySavedTheme()
+    } catch {
+        applySavedTheme()
+    }
+})
 
 // ======================================================
 // CENTRAL API CONFIGURATION
