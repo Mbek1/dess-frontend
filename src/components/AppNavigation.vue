@@ -68,7 +68,7 @@
                 title="Notifications"
               >
                 <i class="bi bi-bell"></i> Notifications
-                <span v-if="notificationCount > 0" class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+                <span v-if="showNotificationBadges && notificationCount > 0" class="badge bg-danger position-absolute top-0 start-100 translate-middle">
                   {{ notificationCount }}
                 </span>
               </button>
@@ -106,7 +106,7 @@
               title="Messages"
             >
               <i class="bi bi-chat-dots"></i> Messages
-              <span v-if="unreadMessagesCount > 0" class="badge bg-danger position-absolute top-0 start-100 translate-middle">
+              <span v-if="showNotificationBadges && unreadMessagesCount > 0" class="badge bg-danger position-absolute top-0 start-100 translate-middle">
                 {{ unreadMessagesCount }}
               </span>
             </button>
@@ -214,6 +214,7 @@ const isAuthenticated = ref(false);
 const userName = ref('');
 const userRole = ref('');
 const unreadMessagesCount = ref(0);
+const showNotificationBadges = ref(true);
 const showMessagesModal = ref(false);
 const showProfileDropdown = ref(false);
 const dashboardRoute = computed(() => {
@@ -277,6 +278,19 @@ const unreadNotificationCount = ref(0);
 const notificationCount = computed(() => unreadNotificationCount.value);
 const showNotificationsDropdown = ref(false);
 let notificationTimer: ReturnType<typeof setInterval> | undefined;
+
+function syncUiPreferences() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('dess_settings') || '{}');
+    showNotificationBadges.value = saved.showNotificationBadges !== false;
+  } catch {
+    showNotificationBadges.value = true;
+  }
+}
+
+function handleSettingsUpdated() {
+  syncUiPreferences();
+}
 
 function checkAuth() {
   const token = sessionStorage.getItem('dess_token');
@@ -429,6 +443,8 @@ function closeDropdowns() {
 
 onMounted(() => {
   checkAuth();
+  syncUiPreferences();
+  window.addEventListener('dess-settings-updated', handleSettingsUpdated);
   void loadNotifications();
   notificationTimer = setInterval(() => { void loadNotifications(); }, 60000);
   document.addEventListener('click', handleClickOutside);
@@ -436,6 +452,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (notificationTimer) clearInterval(notificationTimer);
+  window.removeEventListener('dess-settings-updated', handleSettingsUpdated);
   document.removeEventListener('click', handleClickOutside);
 });
 
