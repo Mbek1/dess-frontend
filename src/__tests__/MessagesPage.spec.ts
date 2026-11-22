@@ -92,6 +92,7 @@ async function mountMessages(path = '/messages', role = 'researcher') {
 }
 
 afterEach(() => {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 })
   sessionStorage.clear()
   vi.clearAllMocks()
 })
@@ -140,6 +141,42 @@ describe('MessagesPage', () => {
 
     expect(wrapper.find('img[alt="Case Investigator profile photo"]').attributes('src')).toContain('/api/users/investigator-2/avatar?v=42')
     expect(wrapper.find('img[alt="Researcher Test profile photo"]').attributes('src')).toContain('/api/users/researcher-1/avatar?v=41')
+  })
+
+  it('opens investigators on their case rooms and refreshes them when a case is created', async () => {
+    const { wrapper } = await mountMessages('/messages', 'investigator')
+    const caseRoomsTab = wrapper.findAll('.folder-tabs button').find(button => button.text().includes('Case rooms'))
+    expect(caseRoomsTab).toBeTruthy()
+    expect(caseRoomsTab!.attributes('aria-selected')).toBe('true')
+    expect(axios.get).toHaveBeenCalledWith(
+      '/api/messages/case-chats',
+      expect.objectContaining({ headers: { Authorization: 'Bearer test-token' } }),
+    )
+
+    window.dispatchEvent(new CustomEvent('dess-case-created'))
+    await flushPromises()
+    expect(vi.mocked(axios.get).mock.calls.filter(([url]) => String(url).endsWith('/case-chats'))).toHaveLength(2)
+    expect(wrapper.text()).toContain('2026-001 · Archived case')
+  })
+
+  it('opens and closes case-room details as a drawer on mobile and the back button returns to the room list', async () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+    const { wrapper } = await mountMessages('/messages', 'investigator')
+    await flushPromises()
+    await wrapper.find('.conversation-row').trigger('click')
+    await flushPromises()
+
+    const detailsButton = wrapper.find('button[aria-label="Toggle case room details"]')
+    expect(detailsButton.attributes('aria-expanded')).toBe('false')
+    await detailsButton.trigger('click')
+    expect(wrapper.find('.contact-details.mobile-details-open').exists()).toBe(true)
+
+    await wrapper.find('button[aria-label="Close details panel"]').trigger('click')
+    expect(wrapper.find('.contact-details.mobile-details-open').exists()).toBe(false)
+
+    await wrapper.find('.mobile-back').trigger('click')
+    expect(wrapper.find('.message-sidebar.mobile-hidden').exists()).toBe(false)
+    expect(wrapper.find('.message-thread.mobile-hidden').exists()).toBe(true)
   })
 
   it('shows case rooms only to investigators and supports group replies', async () => {

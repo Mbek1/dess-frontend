@@ -69,6 +69,45 @@ describe('researcher navigation', () => {
     expect(router.currentRoute.value.path).not.toBe('/investigator')
   })
 
+  it('keeps mobile notification and profile dropdowns interactive', async () => {
+    const { wrapper, router } = await mountResearcherNavigation()
+    await wrapper.find('button[aria-label="Toggle navigation"]').trigger('click')
+
+    await wrapper.find('button[title="Notifications"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.notification-dropdown').exists()).toBe(true)
+
+    await wrapper.find('button[title="Profile"]').trigger('click')
+    expect(wrapper.find('.notification-dropdown').exists()).toBe(false)
+    expect(wrapper.find('.profile-dropdown').exists()).toBe(true)
+
+    const profileLink = wrapper.findAll('.profile-dropdown .dropdown-item')
+      .find(link => link.text().includes('My Profile'))
+    expect(profileLink).toBeTruthy()
+    await profileLink!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.path).toBe('/researcher-profile')
+    expect(wrapper.find('.navbar-collapse').classes()).not.toContain('show')
+  })
+
+  it('opens the mobile navigation and closes it after selecting a destination', async () => {
+    const { wrapper, router } = await mountResearcherNavigation()
+    const toggler = wrapper.find('button[aria-label="Toggle navigation"]')
+
+    expect(wrapper.find('.navbar-collapse').classes()).not.toContain('show')
+    expect(toggler.attributes('aria-expanded')).toBe('false')
+    await toggler.trigger('click')
+    expect(wrapper.find('.navbar-collapse').classes()).toContain('show')
+    expect(toggler.attributes('aria-expanded')).toBe('true')
+
+    await wrapper.find('button[title="Messages"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/messages')
+    expect(wrapper.find('.navbar-collapse').classes()).not.toContain('show')
+    expect(toggler.attributes('aria-expanded')).toBe('false')
+  })
+
   it('opens the shared internal messaging workspace', async () => {
     const { wrapper, router } = await mountResearcherNavigation()
     await wrapper.find('button[title="Messages"]').trigger('click')

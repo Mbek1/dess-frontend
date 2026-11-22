@@ -347,6 +347,16 @@ async function submitCase() {
     console.log('Creating case with payload:', payload);
     const res = await axios.post('/api/cases', payload);
     console.log('Case created successfully:', res.data);
+    window.dispatchEvent(new CustomEvent('dess-case-created', {
+      detail: { caseId: res.data._id, caseChatId: res.data.caseChat?._id, caseNumber: res.data.caseId }
+    }));
+    if ((window as any).addNavNotification) {
+      (window as any).addNavNotification(
+        'Case room created',
+        `The group chat for ${res.data.caseId} is available in Messages → Case rooms.`,
+        'success'
+      );
+    }
     // Add new case to list or refetch
     await fetchCases();
     // Reset form

@@ -4,7 +4,8 @@
       <div>
         <p class="messages-eyebrow"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> DESS WORKSPACE / CASE-AWARE MESSAGING</p>
         <h1>Messages</h1>
-        <p>Secure, case-aware communication between authorized DESS users.</p>
+        <p v-if="currentUserRole === 'investigator'">Your assigned case group chats appear here. Switch folders for direct messages.</p>
+        <p v-else>Secure, case-aware communication between authorized DESS users.</p>
       </div>
       <div class="heading-actions">
         <span class="connection-status"><i class="bi bi-circle-fill" aria-hidden="true"></i> Authenticated workspace</span>
@@ -84,7 +85,7 @@
 
         <template v-if="composeMode">
           <header class="thread-header">
-            <button class="mobile-back" type="button" aria-label="Back to messages" @click="mobileThreadOpen = false"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
+            <button class="mobile-back" type="button" aria-label="Back to messages" @click="backToConversationList"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
             <div class="thread-mark"><i class="bi bi-pencil-square" aria-hidden="true"></i></div>
             <div class="thread-heading-copy"><h2>Compose message</h2><p>Internal communication · visible to selected recipient</p></div>
             <button class="icon-action" type="button" title="Close compose" aria-label="Close compose" @click="cancelCompose"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
@@ -131,12 +132,12 @@
 
         <template v-else-if="activeCaseChat">
           <header class="thread-header">
-            <button class="mobile-back" type="button" aria-label="Back to messages" @click="mobileThreadOpen = false"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
+            <button class="mobile-back" type="button" aria-label="Back to messages" @click="backToConversationList"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
             <span class="room-avatar thread-avatar"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
             <div class="thread-heading-copy"><h2>{{ activeCaseChat.title }}</h2><p>{{ activeCaseChat.caseNumber }} · {{ activeCaseChat.participants.length }} assigned DESS users</p></div>
             <div class="thread-actions">
               <span class="case-tag"><i class="bi bi-shield-lock" aria-hidden="true"></i> Case team only</span>
-              <button class="icon-action" type="button" :aria-expanded="showDetails" title="Toggle case room details" aria-label="Toggle case room details" @click="showDetails = !showDetails"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+              <button class="icon-action" type="button" :aria-expanded="detailsExpanded" aria-controls="message-details-panel" title="Show case room details" aria-label="Toggle case room details" @click="toggleDetails"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
             </div>
           </header>
           <div ref="threadScroll" class="thread-scroll">
@@ -165,7 +166,7 @@
 
         <template v-else-if="activeConversationId">
           <header class="thread-header">
-            <button class="mobile-back" type="button" aria-label="Back to messages" @click="mobileThreadOpen = false"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
+            <button class="mobile-back" type="button" aria-label="Back to messages" @click="backToConversationList"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
             <span class="person-avatar thread-avatar">
               <img v-if="avatarSource(activePartner?._id, activePartner?.profilePicture)" :src="avatarSource(activePartner?._id, activePartner?.profilePicture)" :alt="`${activePartner?.name || 'Contact'} profile photo`" @error="markAvatarFailed(activePartner?._id, activePartner?.profilePicture)" />
               <span v-else>{{ initials(activePartner?.name) }}</span>
@@ -173,7 +174,7 @@
             <div class="thread-heading-copy"><h2>{{ activePartner?.name || 'Conversation' }}</h2><p>{{ activePartner?.email }}<span v-if="activePartner?.role"> · {{ capitalize(activePartner.role) }}</span></p></div>
             <div class="thread-actions">
               <span v-if="activeConversationMessages[0]?.caseNumber" class="case-tag"><i class="bi bi-folder2-open" aria-hidden="true"></i> {{ activeConversationMessages[0].caseNumber }}</span>
-              <button class="icon-action" type="button" :aria-expanded="showDetails" title="Toggle contact details" aria-label="Toggle contact details" @click="showDetails = !showDetails"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
+              <button class="icon-action" type="button" :aria-expanded="detailsExpanded" aria-controls="message-details-panel" title="Show contact details" aria-label="Toggle contact details" @click="toggleDetails"><i class="bi bi-info-circle" aria-hidden="true"></i></button>
               <button class="icon-action" type="button" title="Archive conversation" aria-label="Archive conversation" @click="archiveConversation"><i class="bi bi-archive" aria-hidden="true"></i></button>
               <button class="icon-action danger-action" type="button" title="Delete conversation for me" aria-label="Delete conversation for me" @click="deleteConversation"><i class="bi bi-trash3" aria-hidden="true"></i></button>
             </div>
@@ -215,10 +216,25 @@
         </div>
       </section>
 
-      <aside v-if="showDetails && !composeMode && (activePartner || activeCaseChat)" class="contact-details" aria-label="Conversation details">
+      <button
+        v-if="mobileDetailsOpen && (activePartner || activeCaseChat)"
+        class="mobile-details-backdrop"
+        type="button"
+        aria-label="Close conversation details"
+        @click="closeDetails"
+      ></button>
+      <aside
+        v-if="(showDetails || mobileDetailsOpen) && !composeMode && (activePartner || activeCaseChat)"
+        id="message-details-panel"
+        class="contact-details"
+        :class="{ 'mobile-details-open': mobileDetailsOpen }"
+        :aria-label="activeCaseChat ? 'Case room details' : 'Contact details'"
+        :role="mobileDetailsOpen ? 'dialog' : undefined"
+        :aria-modal="mobileDetailsOpen ? 'true' : undefined"
+      >
         <header class="details-panel-header">
           <div><p class="details-eyebrow">CONVERSATION INFO</p><h3>{{ activeCaseChat ? 'Case room' : 'Contact details' }}</h3></div>
-          <button class="icon-action" type="button" aria-label="Close details panel" @click="showDetails = false"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+          <button class="icon-action" type="button" aria-label="Close details panel" @click="closeDetails"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
         </header>
 
         <template v-if="activePartner">
@@ -362,6 +378,8 @@ const activeConversationMessages = ref<MessageRecord[]>([]);
 const caseChatMessages = ref<CaseChatMessageRecord[]>([]);
 const activePartner = ref<DirectoryUser | null>(null);
 const showDetails = ref(true);
+const mobileDetailsOpen = ref(false);
+const isSmallScreen = ref(false);
 const showMessagePreviews = ref(true);
 const compactLists = ref(false);
 const confirmBeforeDelete = ref(true);
@@ -434,6 +452,29 @@ function handleSettingsUpdated() {
   syncUiPreferences();
 }
 
+function syncViewport() {
+  const mediaQueryMatches = window.matchMedia?.('(max-width: 760px)').matches === true;
+  isSmallScreen.value = mediaQueryMatches || window.innerWidth <= 760;
+  if (!isSmallScreen.value) mobileDetailsOpen.value = false;
+}
+
+const detailsExpanded = computed(() => isSmallScreen.value ? mobileDetailsOpen.value : showDetails.value);
+
+function toggleDetails() {
+  if (isSmallScreen.value) mobileDetailsOpen.value = !mobileDetailsOpen.value;
+  else showDetails.value = !showDetails.value;
+}
+
+function closeDetails() {
+  if (isSmallScreen.value) mobileDetailsOpen.value = false;
+  else showDetails.value = false;
+}
+
+function backToConversationList() {
+  mobileThreadOpen.value = false;
+  mobileDetailsOpen.value = false;
+}
+
 const conversations = computed<Conversation[]>(() => {
   const groups = new Map<string, MessageRecord[]>();
   for (const message of messages.value) {
@@ -493,6 +534,10 @@ async function loadCaseChats() {
   try {
     const response = await axios.get(`${API_CONFIG.endpoints.messages}/case-chats`, { headers: authHeaders() });
     caseChats.value = response.data;
+    if (activeCaseChat.value) {
+      const refreshedRoom = caseChats.value.find((room: CaseChatRecord) => room._id === activeCaseChat.value?._id);
+      if (refreshedRoom) activeCaseChat.value = refreshedRoom;
+    }
   } catch (error: any) {
     listError.value = error?.response?.data?.error || 'Could not load case rooms.';
   } finally {
@@ -646,6 +691,7 @@ async function sendMessage(parentMessageId?: string) {
     replyBody.value = '';
     body.value = '';
     await loadMessages();
+    activeFolder.value = 'inbox';
     await router.replace({ path: '/messages', query: {} });
     const conversation = conversations.value.find(item => item.conversationId === sentMessage.conversationId);
     if (conversation) await openConversation(conversation);
@@ -731,18 +777,45 @@ function viewItem(event: KeyboardEvent) {
 }
 
 watch(() => [route.query.recipient, route.query.caseNumber], () => { void applyRouteContext(); });
+async function refreshActiveFolder() {
+  if (activeFolder.value === 'case-chats' && currentUserRole.value === 'investigator') {
+    await loadCaseChats();
+  } else if (activeFolder.value !== 'case-chats') {
+    await loadMessages();
+  }
+}
+
+function handleCaseCreated() {
+  if (currentUserRole.value !== 'investigator') return;
+  activeFolder.value = 'case-chats';
+  void loadCaseChats();
+}
+
 onMounted(() => {
   const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}');
   currentUserId.value = currentUser.id || '';
   currentUserRole.value = currentUser.role || '';
   syncUiPreferences();
+  syncViewport();
+  window.addEventListener('resize', syncViewport);
+  window.addEventListener('focus', refreshActiveFolder);
+  window.addEventListener('dess-case-created', handleCaseCreated);
   window.addEventListener('dess-settings-updated', handleSettingsUpdated);
-  void loadMessages();
+  if (currentUserRole.value === 'investigator') {
+    activeFolder.value = 'case-chats';
+    void loadCaseChats();
+  } else {
+    activeFolder.value = 'inbox';
+    void loadMessages();
+  }
   void applyRouteContext();
   window.addEventListener('keydown', viewItem);
 });
 onBeforeUnmount(() => {
   if (recipientSearchTimer) clearTimeout(recipientSearchTimer);
+  window.removeEventListener('resize', syncViewport);
+  window.removeEventListener('focus', refreshActiveFolder);
+  window.removeEventListener('dess-case-created', handleCaseCreated);
   window.removeEventListener('dess-settings-updated', handleSettingsUpdated);
   window.removeEventListener('keydown', viewItem);
 });
@@ -1364,7 +1437,37 @@ onBeforeUnmount(() => {
   .message-workspace,.message-workspace.with-details,.message-workspace.with-details.details-open { grid-template-columns: minmax(0, 1fr); }
   .message-sidebar,.message-thread { grid-column: 1; grid-row: 1; }
   .message-sidebar.mobile-hidden,.message-thread.mobile-hidden { display: none; }
+  .folder-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .folder-tabs button { flex: 0 0 auto; min-height: 42px; white-space: nowrap; }
   .contact-details { display: none !important; }
+  .contact-details.mobile-details-open {
+    position: absolute;
+    z-index: 13;
+    inset: 0 auto 0 0;
+    display: flex !important;
+    width: min(88vw, 380px);
+    max-width: 100%;
+    border: 0;
+    border-radius: 0 14px 14px 0;
+    box-shadow: 12px 0 36px rgba(13, 35, 23, .2);
+  }
+  .mobile-details-backdrop {
+    position: absolute;
+    z-index: 12;
+    inset: 0;
+    display: block;
+    width: 100%;
+    border: 0;
+    background: rgba(12, 24, 18, .42);
+  }
+  .message-workspace { overflow: hidden; }
+  .thread-header .icon-action,.thread-header .mobile-back { min-width: 40px; min-height: 40px; }
 }
 
 
