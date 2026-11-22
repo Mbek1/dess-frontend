@@ -25,7 +25,7 @@
             <label>Role</label>
             <select v-model="newUser.role" class="form-control" required>
               <option value="">Select Role</option>
-              <option value="investigator">Investigator</option>
+              <option value="investigator">DESS User</option>
               <option value="prosecutor">Prosecutor</option>
               <option value="auditor">Auditor</option>
               <option value="admin">Admin</option>
@@ -78,7 +78,7 @@
         <input v-model="searchUser" type="text" placeholder="Search users..." class="form-control" />
         <select v-model="filterRole" class="form-control">
           <option value="">All Roles</option>
-          <option value="investigator">Investigator</option>
+          <option value="investigator">DESS User</option>
           <option value="prosecutor">Prosecutor</option>
           <option value="auditor">Auditor</option>
           <option value="admin">Admin</option>
@@ -99,7 +99,7 @@
           <div class="user-name">{{ user.name }}</div>
           <div class="user-email">{{ user.email }}</div>
           <div class="user-role">
-            <span class="badge" :class="`badge-${user.role}`">{{ user.role }}</span>
+            <span class="badge" :class="`badge-${user.role}`">{{ userRoleLabel(user.role) }}</span>
           </div>
           <div class="user-status">
             <span v-if="user.active" class="status-badge active">Active</span>
@@ -142,9 +142,13 @@ const newUser = ref({
 
 const permissionKeys = ['upload', 'download', 'delete', 'viewLogs', 'assignCase'] as const;
 
+function userRoleLabel(role: string) {
+  return role === 'investigator' ? 'DESS User' : role;
+}
+
 const roles = [
   {
-    name: 'Investigator',
+    name: 'DESS User',
     permissions: { upload: true, download: true, delete: false, viewLogs: false, assignCase: false }
   },
   {

@@ -79,7 +79,7 @@
             <input type="checkbox" v-model="policies.mfa.enforceMFAAdmins" />
           </div>
           <div class="policy-item">
-            <span class="label">Enforce MFA for Investigators</span>
+            <span class="label">Enforce MFA for DESS Users</span>
             <input type="checkbox" v-model="policies.mfa.enforceMFAInvestigators" />
           </div>
           <div class="policy-item">

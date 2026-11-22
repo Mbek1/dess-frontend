@@ -48,7 +48,7 @@
         <div class="coc-item">
           <span class="coc-time">[12:03]</span>
           <span class="coc-action upload">UPLOAD</span>
-          <span>Evidence uploaded by Investigator A</span>
+          <span>Evidence uploaded by DESS User A</span>
           <span class="coc-hash">Hash: abc123def456</span>
         </div>
         <div class="coc-item">
@@ -110,7 +110,7 @@ const mockLogs = [
   {
     _id: '1',
     timestamp: new Date(Date.now() - 3600000),
-    user: 'investigator_a',
+    user: 'dess_user_a',
     action: 'UPLOAD',
     description: 'Evidence uploaded - Crime_Scene_Photos.zip',
     details: { size: '2.5MB', hash: 'abc123def456' }
@@ -126,7 +126,7 @@ const mockLogs = [
   {
     _id: '3',
     timestamp: new Date(Date.now() - 1800000),
-    user: 'investigator_c',
+    user: 'dess_user_c',
     action: 'DOWNLOAD',
     description: 'Downloaded evidence',
     details: { hashVerified: 'MATCH' }

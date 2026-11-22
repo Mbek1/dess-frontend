@@ -85,7 +85,7 @@
                 <div class="p-3 border rounded-3 h-100">
                   <i class="bi bi-folder-check fs-2 text-success"></i>
                   <h5 class="mt-2">Case Management</h5>
-                  <p class="mb-0">Organize digital evidence files under specific cases and enable multiple investigators to collaborate effectively.</p>
+                  <p class="mb-0">Organize digital evidence files under specific cases and enable authorized DESS users to collaborate effectively.</p>
                 </div>
               </div>
               <div class="col-md-6">
@@ -229,7 +229,7 @@ const features = [
 const stats = [
   { icon: 'bi bi-folder-check', value: 500, label: 'Cases Managed' },
   { icon: 'bi bi-file-earmark-check', value: 10000, label: 'Evidence Files' },
-  { icon: 'bi bi-people', value: 250, label: 'Active Investigators' },
+  { icon: 'bi bi-people', value: 250, label: 'Active DESS Users' },
   { icon: 'bi bi-shield-check', value: 100, label: 'Security Score' },
 ];
 const details = [
@@ -237,9 +237,9 @@ const details = [
     img: '/img/details-1.png',
     title: 'User Authentication & Case Creation',
     items: [
-      'Investigators log in using secure credentials and MFA',
+      'DESS users sign in using secure credentials and MFA',
       'Create cases with unique identifiers',
-      'Add investigators and manage permissions',
+      'Manage authorized DESS users and their permissions',
     ],
   },
   {
@@ -255,7 +255,7 @@ const details = [
     img: '/img/details-3.png',
     title: 'Collaboration & Tracking',
     items: [
-      'Multiple investigators can work on the same case',
+      'Authorized DESS users can collaborate on the same case',
       'Track all activities with comprehensive audit logs',
       'Maintain chain of custody for legal compliance',
     ],
@@ -263,7 +263,7 @@ const details = [
 ];
 const faqs = [
   { q: 'How secure is the evidence storage?', a: 'All evidence is encrypted and access is strictly controlled with audit logs.' },
-  { q: 'Can multiple investigators work on a case?', a: 'Yes, the system supports collaboration and role-based permissions.' },
+  { q: 'Can multiple DESS users collaborate on a case?', a: 'Yes, the system supports collaboration and role-based permissions.' },
   { q: 'How is data integrity ensured?', a: 'Cryptographic hashes and audit trails ensure all evidence is tamper-proof.' },
 ];
 

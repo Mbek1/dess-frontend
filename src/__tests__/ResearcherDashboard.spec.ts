@@ -69,6 +69,6 @@ describe('ResearcherDashboard evidence access', () => {
     await wrapper.find('.details-button').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('Download available files')
-    expect(wrapper.text()).toContain('Research access is set by the case investigators.')
+    expect(wrapper.text()).toContain('Research access is managed by the assigned DESS team.')
   })
 })

@@ -48,7 +48,7 @@
               <div class="text-muted small">Description: {{ ev.description }}</div>
               <div class="text-muted small">Hash: {{ ev.hash }}</div>
               <span class="badge" :class="ev.visibleToResearchers ? 'bg-success' : 'bg-secondary'">
-                {{ ev.visibleToResearchers ? 'Shared with researchers' : 'Investigator-only' }}
+                {{ ev.visibleToResearchers ? 'Shared with researchers' : 'DESS team only' }}
               </span>
               <div v-if="ev.deletionRequest?.status === 'pending'" class="small text-warning mt-2">
                 Deletion vote: {{ ev.deletionRequest.votes.length }}/{{ ev.deletionRequest.eligibleVoterIds.length }} votes · Due {{ formatVoteDeadline(ev.deletionRequest.expiresAt) }}

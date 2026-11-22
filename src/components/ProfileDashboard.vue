@@ -299,7 +299,7 @@ const verification = ref<VerificationState>({
   livenessStatus: 'not_configured'
 });
 
-const roleLabel = computed(() => role.value ? role.value[0].toUpperCase() + role.value.slice(1) : 'DESS User');
+const roleLabel = computed(() => role.value === 'investigator' ? 'DESS User' : role.value ? role.value[0].toUpperCase() + role.value.slice(1) : 'DESS User');
 const emailVerified = computed(() => verification.value.emailVerified);
 const identityDocument = computed(() => verification.value.identity);
 const organizationDocument = computed(() => verification.value.organization);
