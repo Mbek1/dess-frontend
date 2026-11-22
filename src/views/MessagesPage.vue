@@ -37,7 +37,7 @@
           <div v-else-if="listError" class="list-state list-error" role="alert">{{ listError }}</div>
           <template v-else-if="activeFolder === 'case-chats'">
             <div v-if="filteredCaseChats.length === 0" class="list-state empty-list">
-              <i class="bi bi-people" aria-hidden="true"></i><strong>No case rooms available</strong><span>Case rooms include investigators assigned to each case.</span>
+              <i class="bi bi-people" aria-hidden="true"></i><strong>No case rooms available</strong><span>Case rooms include DESS users assigned to each case.</span>
             </div>
             <button v-for="chat in filteredCaseChats" :key="chat._id" class="conversation-row" :class="{ selected: activeCaseChat?._id === chat._id }" type="button" @click="openCaseChat(chat)">
               <span class="room-avatar"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
@@ -45,7 +45,7 @@
                 <span class="conversation-meta"><strong>{{ chat.caseNumber }}</strong><time>{{ formatTime(chat.lastMessageAt) }}</time></span>
                 <span class="conversation-subject">{{ chat.title }}</span>
                 <span class="conversation-preview">{{ chat.lastMessage || 'Case room created' }}</span>
-                <span class="conversation-tags"><span class="case-tag"><i class="bi bi-people" aria-hidden="true"></i> {{ chat.participants.length }} investigators</span></span>
+                <span class="conversation-tags"><span class="case-tag"><i class="bi bi-people" aria-hidden="true"></i> {{ chat.participants.length }} DESS users</span></span>
               </span>
               <span v-if="chat.unreadCount" class="unread-dot" :aria-label="`${chat.unreadCount} unread`"></span>
             </button>
@@ -124,7 +124,7 @@
           <header class="thread-header">
             <button class="mobile-back" type="button" aria-label="Back to messages" @click="mobileThreadOpen = false"><i class="bi bi-arrow-left" aria-hidden="true"></i></button>
             <span class="room-avatar thread-avatar"><i class="bi bi-people-fill" aria-hidden="true"></i></span>
-            <div class="thread-heading-copy"><h2>{{ activeCaseChat.title }}</h2><p>{{ activeCaseChat.caseNumber }} · {{ activeCaseChat.participants.length }} assigned investigators</p></div>
+            <div class="thread-heading-copy"><h2>{{ activeCaseChat.title }}</h2><p>{{ activeCaseChat.caseNumber }} · {{ activeCaseChat.participants.length }} assigned DESS users</p></div>
             <span class="case-tag"><i class="bi bi-shield-lock" aria-hidden="true"></i> Case team only</span>
           </header>
           <div ref="threadScroll" class="thread-scroll">
@@ -141,7 +141,7 @@
           <form class="reply-composer" @submit.prevent="sendCaseChatMessage">
             <label class="visually-hidden" for="case-chat-body">Message the case team</label>
             <textarea id="case-chat-body" v-model="replyBody" rows="2" maxlength="10000" placeholder="Message the assigned case team..." :disabled="sending"></textarea>
-            <div class="reply-footer"><span>Visible to assigned investigators only · {{ replyBody.length }}/10,000</span><button class="send-button" type="submit" :disabled="sending || !replyBody.trim()"><i class="bi bi-send-fill" aria-hidden="true"></i>{{ sending ? 'Sending...' : 'Send to case team' }}</button></div>
+            <div class="reply-footer"><span>Visible to assigned DESS users only · {{ replyBody.length }}/10,000</span><button class="send-button" type="submit" :disabled="sending || !replyBody.trim()"><i class="bi bi-send-fill" aria-hidden="true"></i>{{ sending ? 'Sending...' : 'Send to case team' }}</button></div>
           </form>
         </template>
 
@@ -286,7 +286,7 @@ const folders: { value: Folder; label: string }[] = [
 function getToken() { return sessionStorage.getItem('dess_token') || ''; }
 function authHeaders() { return { Authorization: `Bearer ${getToken()}` }; }
 function initials(name?: string) { return (name || 'DESS').split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase(); }
-function capitalize(value?: string) { return value ? value[0].toUpperCase() + value.slice(1) : ''; }
+function capitalize(value?: string) { if (!value) return ''; return value.toLowerCase() === 'investigator' ? 'DESS User' : value[0].toUpperCase() + value.slice(1); }
 function formatTime(value: string) { return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 function formatDateTime(value: string) { return new Date(value).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
 function categoryLabel(value: string) { return ({ 'case-related': 'Case related', general: 'General', urgent: 'Urgent', 'follow-up': 'Follow-up' } as Record<string, string>)[value] || 'General'; }
