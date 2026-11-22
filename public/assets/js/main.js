@@ -152,19 +152,32 @@
   /**
    * Correct scrolling position upon page load for URLs containing hash links.
    */
-  window.addEventListener('load', function(e) {
-    if (window.location.hash) {
-      if (document.querySelector(window.location.hash)) {
-        setTimeout(() => {
-          let section = document.querySelector(window.location.hash);
-          let scrollMarginTop = getComputedStyle(section).scrollMarginTop;
-          window.scrollTo({
-            top: section.offsetTop - parseInt(scrollMarginTop),
-            behavior: 'smooth'
-          });
-        }, 100);
-      }
+  function getPageSectionFromHash(hash) {
+    // Vue Router uses hashes such as "#/" and "#/investigator".
+    // Those are routes, not CSS selectors or landing-page section IDs.
+    if (!hash || hash.length < 2 || hash.startsWith('#/')) return null;
+
+    let sectionId;
+    try {
+      sectionId = decodeURIComponent(hash.slice(1));
+    } catch {
+      return null;
     }
+
+    return document.getElementById(sectionId);
+  }
+
+  window.addEventListener('load', function() {
+    const section = getPageSectionFromHash(window.location.hash);
+    if (!section) return;
+
+    setTimeout(() => {
+      const scrollMarginTop = parseInt(getComputedStyle(section).scrollMarginTop || '0', 10) || 0;
+      window.scrollTo({
+        top: section.offsetTop - scrollMarginTop,
+        behavior: 'smooth'
+      });
+    }, 100);
   });
 
   /**
@@ -174,8 +187,8 @@
 
   function navmenuScrollspy() {
     navmenulinks.forEach(navmenulink => {
-      if (!navmenulink.hash) return;
-      let section = document.querySelector(navmenulink.hash);
+      if (!navmenulink.hash || navmenulink.hash.startsWith('#/')) return;
+      const section = getPageSectionFromHash(navmenulink.hash);
       if (!section) return;
       let position = window.scrollY + 200;
       if (position >= section.offsetTop && position <= (section.offsetTop + section.offsetHeight)) {

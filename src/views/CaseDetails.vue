@@ -273,6 +273,31 @@ onMounted(async () => {
   await fetchCase();
 });
 
+
+function recordRecentCase(item: any) {
+  try {
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    const userKey = user?.id || user?._id || user?.email;
+    if (!userKey || !item?._id) return;
+
+    const recentCase = {
+      id: String(item._id),
+      caseId: item.caseId || '',
+      number: item.number,
+      name: item.name || 'Untitled case',
+      status: item.status || 'open',
+      visitedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(
+      `dess:last-visited-case:${encodeURIComponent(String(userKey))}`,
+      JSON.stringify(recentCase)
+    );
+  } catch (error) {
+    console.warn('Could not save the recently viewed case:', error);
+  }
+}
+
 async function fetchCase() {
   loadingCase.value = true;
   caseError.value = '';
@@ -280,6 +305,7 @@ async function fetchCase() {
     const id = route.params.id;
     const res = await axios.get(`/api/cases/${id}`);
     caseItem.value = res.data;
+    recordRecentCase(res.data);
   } catch (err: any) {
     caseError.value = err?.response?.data?.error || 'Failed to fetch case details';
   } finally {

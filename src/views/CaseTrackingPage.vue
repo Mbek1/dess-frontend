@@ -305,12 +305,38 @@ function formatDate(dateString: string | undefined): string {
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+
+function recordRecentCase(item: any) {
+  try {
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    const userKey = user?.id || user?._id || user?.email;
+    if (!userKey || !item?._id) return;
+
+    const recentCase = {
+      id: String(item._id),
+      caseId: item.caseId || '',
+      number: item.number,
+      name: item.name || 'Untitled case',
+      status: item.status || 'open',
+      visitedAt: new Date().toISOString()
+    };
+
+    localStorage.setItem(
+      `dess:last-visited-case:${encodeURIComponent(String(userKey))}`,
+      JSON.stringify(recentCase)
+    );
+  } catch (error) {
+    console.warn('Could not save the recently viewed case:', error);
+  }
+}
+
 async function loadCase() {
   loadingCase.value = true;
   caseError.value = '';
   try {
     const response = await axios.get(`/api/cases/${route.params.id}`);
     caseItem.value = response.data;
+    recordRecentCase(response.data);
   } catch (err: any) {
     caseError.value = err?.response?.data?.error || 'Failed to load case';
     console.error('Error loading case:', err);
