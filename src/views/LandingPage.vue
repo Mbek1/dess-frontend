@@ -9,12 +9,12 @@
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>
-            <li><a href="#hero" class="active">Home</a></li>
-            <li><a href="#about">About DESS</a></li>
-            <li><a href="#how-it-works">How It Works</a></li>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#audience">Who It's For</a></li>
-            <li><a href="#faq">FAQs</a></li>
+            <li><a href="#" class="active" @click.prevent="scrollToSection('hero')">Home</a></li>
+            <li><a href="#" @click.prevent="scrollToSection('about')">About DESS</a></li>
+            <li><a href="#" @click.prevent="scrollToSection('how-it-works')">How It Works</a></li>
+            <li><a href="#" @click.prevent="scrollToSection('features')">Features</a></li>
+            <li><a href="#" @click.prevent="scrollToSection('audience')">Who It's For</a></li>
+            <li><a href="#" @click.prevent="scrollToSection('faq')">FAQs</a></li>
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
@@ -31,7 +31,7 @@
             <p class="lead">Bring cases, evidence and documented findings together. DESS is a research and collaboration workspace for cybersecurity and digital-forensics students, researchers and practitioners.</p>
             <div class="d-flex flex-wrap gap-3 mt-4">
               <button class="btn btn-success btn-lg" @click="showAuth = true">Get Started <i class="bi bi-arrow-right ms-1"></i></button>
-              <a href="#how-it-works" class="btn btn-outline-light btn-lg">Explore How It Works</a>
+              <a href="#" @click.prevent="scrollToSection('how-it-works')" class="btn btn-outline-light btn-lg">Explore How It Works</a>
             </div>
             <div class="d-flex flex-wrap gap-3 mt-4 small text-white-50">
               <span><i class="bi bi-folder-check text-success me-1"></i> Case-centred records</span>
@@ -55,7 +55,7 @@
             <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">About DESS</p>
             <h2 class="fw-bold">A connected view of every case.</h2>
             <p class="text-muted">Digital-forensics knowledge can be scattered across case notes, evidence files and individual teams. DESS brings case records, linked evidence, metadata and case updates into one searchable workspace, helping people learn from previous work and collaborate with the right context.</p>
-            <a href="#how-it-works" class="btn btn-link text-success px-0">See how DESS works <i class="bi bi-arrow-right"></i></a>
+            <a href="#" @click.prevent="scrollToSection('how-it-works')" class="btn btn-link text-success px-0">See how DESS works <i class="bi bi-arrow-right"></i></a>
           </div>
           <div class="col-xl-7">
             <div class="row g-4">
@@ -264,5 +264,13 @@ const faqs = [
 ];
 
 const showAuth = ref(false);
+
+function scrollToSection(id: string) {
+  const section = document.getElementById(id);
+  if (!section) return;
+  const margin = Number.parseInt(getComputedStyle(section).scrollMarginTop || '0', 10) || 0;
+  const top = section.getBoundingClientRect().top + window.scrollY - margin;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
 
 </script>
