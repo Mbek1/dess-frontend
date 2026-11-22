@@ -396,11 +396,13 @@ async function loadNotifications() {
 
 function toggleNotifications() {
   showNotificationsDropdown.value = !showNotificationsDropdown.value;
+  showProfileDropdown.value = false;
   if (showNotificationsDropdown.value) void loadNotifications();
 }
 
 function toggleProfile() {
   showProfileDropdown.value = !showProfileDropdown.value;
+  showNotificationsDropdown.value = false;
 }
 
 async function openNotification(notification: Notification) {
@@ -482,6 +484,7 @@ function handleClickOutside(event: MouseEvent) {
   if (navEl && !navEl.contains(target)) {
     showNotificationsDropdown.value = false;
     showProfileDropdown.value = false;
+    closeMobileNav();
   }
 }
 
