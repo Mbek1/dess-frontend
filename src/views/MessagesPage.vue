@@ -691,6 +691,7 @@ async function sendMessage(parentMessageId?: string) {
     replyBody.value = '';
     body.value = '';
     await loadMessages();
+    activeFolder.value = 'inbox';
     await router.replace({ path: '/messages', query: {} });
     const conversation = conversations.value.find(item => item.conversationId === sentMessage.conversationId);
     if (conversation) await openConversation(conversation);
