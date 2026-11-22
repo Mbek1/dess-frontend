@@ -155,7 +155,7 @@ describe('MessagesPage', () => {
 
     window.dispatchEvent(new CustomEvent('dess-case-created'))
     await flushPromises()
-    expect(axios.get).toHaveBeenCalledTimes(expect.any(Number))
+    expect(vi.mocked(axios.get).mock.calls.filter(([url]) => String(url).endsWith('/case-chats'))).toHaveLength(2)
     expect(wrapper.text()).toContain('2026-001 · Archived case')
   })
 
