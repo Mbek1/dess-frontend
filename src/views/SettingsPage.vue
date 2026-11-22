@@ -114,6 +114,28 @@
           <button class="session-button" type="button" @click="showSessionDetails = true">
             <i class="bi bi-person-lock" aria-hidden="true"></i><span>View session details</span><i class="bi bi-chevron-right" aria-hidden="true"></i>
           </button>
+          <div class="login-history">
+            <div class="history-heading">
+              <div><h3>Login history &amp; active sessions</h3><p>Recent browsers and devices that have signed in to this account.</p></div>
+              <button v-if="sessionRecords.some(item => item.isActive && !item.isCurrent)" class="revoke-others" type="button" @click="revokeOtherSessions">Sign out other devices</button>
+            </div>
+            <p v-if="sessionsLoading" class="history-empty">Loading login history…</p>
+            <p v-else-if="sessionLoadError" class="history-error" role="alert">{{ sessionLoadError }}</p>
+            <p v-else-if="!sessionRecords.length" class="history-empty">No recorded sessions yet. Sign out and sign in again to create a tracked session.</p>
+            <article v-for="item in sessionRecords" :key="item.id" class="session-record">
+              <span class="device-icon"><i class="bi bi-laptop" aria-hidden="true"></i></span>
+              <div class="session-record-main">
+                <strong>{{ item.deviceLabel || 'Unknown device' }} <span v-if="item.isCurrent" class="current-label">This device</span></strong>
+                <small>IP: {{ item.ipAddress || 'Not recorded' }}</small>
+                <small>Last activity: {{ formatSessionDate(item.lastActivityAt) }}</small>
+                <small>Signed in: {{ formatSessionDate(item.createdAt) }}</small>
+              </div>
+              <div class="session-record-actions">
+                <span class="session-status" :class="item.isActive ? 'status-active' : 'status-ended'">{{ item.isActive ? 'Active' : 'Ended' }}</span>
+                <button v-if="item.isActive" type="button" class="revoke-session" @click="revokeSession(item.id)">Revoke</button>
+              </div>
+            </article>
+          </div>
         </section>
 
         <div v-if="error" class="settings-feedback error-feedback" role="alert">
@@ -187,6 +209,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { API_CONFIG } from '@/config';
 
 type ThemeChoice = 'light' | 'dark' | 'system';
 
@@ -205,6 +228,9 @@ const saved = ref(false);
 const error = ref('');
 const showSessionDetails = ref(false);
 const sessionUser = ref<{ name?: string; email?: string; role?: string }>({});
+const sessionRecords = ref<any[]>([]);
+const sessionsLoading = ref(false);
+const sessionLoadError = ref('');
 
 const defaultSettings: UiSettings = {
   theme: 'light',
@@ -248,6 +274,68 @@ function readSessionUser() {
     sessionUser.value = JSON.parse(sessionStorage.getItem('user') || '{}');
   } catch {
     sessionUser.value = {};
+  }
+}
+
+function getAuthHeaders() {
+  return { Authorization: `Bearer ${sessionStorage.getItem('dess_token') || ''}` };
+}
+
+function formatSessionDate(value?: string) {
+  if (!value) return 'Not available';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Not available' : date.toLocaleString();
+}
+
+async function loadSessions() {
+  sessionsLoading.value = true;
+  sessionLoadError.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/auth/sessions`, {
+      headers: getAuthHeaders(), credentials: 'include'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not load login history.');
+    sessionRecords.value = Array.isArray(data.sessions) ? data.sessions : [];
+  } catch (err: any) {
+    sessionLoadError.value = err.message || 'Could not load login history.';
+  } finally {
+    sessionsLoading.value = false;
+  }
+}
+
+async function revokeSession(sessionId: string) {
+  if (!window.confirm('Revoke this session? That device will need to sign in again.')) return;
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/auth/sessions/${encodeURIComponent(sessionId)}`, {
+      method: 'DELETE', headers: getAuthHeaders(), credentials: 'include'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not revoke session.');
+    if (sessionRecords.value.find(item => item.id === sessionId)?.isCurrent) {
+      sessionStorage.removeItem('dess_token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('dess_user_role');
+      await router.push('/login');
+      return;
+    }
+    await loadSessions();
+  } catch (err: any) {
+    sessionLoadError.value = err.message || 'Could not revoke session.';
+  }
+}
+
+async function revokeOtherSessions() {
+  if (!window.confirm('Sign out all other devices and browsers?')) return;
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/auth/sessions/revoke-others`, {
+      method: 'POST', headers: getAuthHeaders(), credentials: 'include'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not revoke other sessions.');
+    await loadSessions();
+  } catch (err: any) {
+    sessionLoadError.value = err.message || 'Could not revoke other sessions.';
   }
 }
 
@@ -308,6 +396,7 @@ function resetSettings() {
 onMounted(() => {
   loadSettings();
   applyTheme(settings.value.theme);
+  void loadSessions();
 });
 </script>
 
@@ -395,6 +484,21 @@ onMounted(() => {
 .error-feedback { border: 1px solid #f0d3d1; color: #a33e39; background: #fff6f5; }
 .success-feedback { border: 1px solid #d8ebdf; color: #247d55; background: #f1faf5; }
 .dialog-backdrop { position: fixed; z-index: 1100; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(19, 39, 28, .48); }
+.login-history { display: grid; gap: 9px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.history-heading h3 { margin: 0; color: var(--text-main); font-size: 13px; }
+.history-heading p,.history-empty { margin: 4px 0 0; color: var(--text-muted); font-size: 10px; }
+.revoke-others,.revoke-session { min-height: 30px; padding: 6px 9px; border: 1px solid #e5b9b5; border-radius: 5px; color: #a3443d; background: #fff8f7; cursor: pointer; font-size: 10px; font-weight: 650; }
+.session-record { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-bg); }
+.device-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 6px; color: #267d5b; background: #eaf5ee; }
+.session-record-main { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.session-record-main strong { color: var(--text-main); font-size: 10px; }
+.session-record-main small { overflow-wrap: anywhere; color: var(--text-muted); font-size: 9px; }
+.current-label { margin-left: 5px; color: #247d55; font-size: 9px; }
+.session-record-actions { display: grid; justify-items: end; gap: 5px; }
+.session-status { font-size: 9px; font-weight: 700; }
+.status-active { color: #247d55; }.status-ended { color: #87938b; }
+.history-error { margin: 0; color: #a33e39; font-size: 10px; }
 .session-dialog { width: min(440px, 100%); padding: 20px; border: 1px solid #dce9df; border-radius: 9px; color: #273b2f; background: #fff; box-shadow: 0 24px 70px rgba(0, 0, 0, .2); }
 .dialog-heading { display: flex; align-items: center; justify-content: space-between; }
 .close-dialog { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid #e0eae3; border-radius: 6px; color: #718177; background: transparent; cursor: pointer; }
