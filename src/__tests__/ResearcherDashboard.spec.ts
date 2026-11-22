@@ -44,6 +44,7 @@ async function mountDashboard(cases = [sharedCase]) {
 }
 
 afterEach(() => {
+  localStorage.clear()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
