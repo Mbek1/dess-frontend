@@ -20,12 +20,12 @@ const sharedCase = {
   ]
 }
 
-async function mountDashboard() {
+async function mountDashboard(cases = [sharedCase]) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
     const data = url.includes('/api/notifications')
       ? { notifications: [], unreadCount: 0 }
-      : { closedCases: [sharedCase], openCaseFound: null }
+      : { closedCases: cases, openCaseFound: null }
     return { ok: true, json: async () => data } as Response
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -62,6 +62,24 @@ describe('ResearcherDashboard evidence access', () => {
     expect(wrapper.text()).toContain('1 restricted evidence item(s)')
     expect(wrapper.text()).not.toContain('evidence-restricted')
     expect(wrapper.text()).not.toContain('private-hash')
+  })
+
+  it('uses the saved page size and compact-list preference', async () => {
+    localStorage.setItem('dess_settings', JSON.stringify({ itemsPerPage: 10, compactLists: true }))
+    const cases = Array.from({ length: 12 }, (_, index) => ({
+      ...sharedCase,
+      _id: `case-${index}`,
+      caseId: `2026-CASE-${index + 1}`,
+      name: `Archived case ${index + 1}`
+    }))
+    const { wrapper } = await mountDashboard(cases)
+
+    expect(wrapper.find('.researcher-page').classes()).toContain('compact-list-view')
+    expect(wrapper.findAll('.case-table tbody tr')).toHaveLength(10)
+    expect(wrapper.text()).toContain('Showing 1–10 of 12 cases')
+    await wrapper.find('.pagination-actions button:last-child').trigger('click')
+    expect(wrapper.findAll('.case-table tbody tr')).toHaveLength(2)
+    expect(wrapper.text()).toContain('Showing 11–12 of 12 cases')
   })
 
   it('labels downloadable case material as investigator-approved evidence', async () => {
