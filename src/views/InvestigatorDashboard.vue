@@ -84,7 +84,7 @@
     <div class="welcome-section d-flex align-items-center mb-5">
       <img src="/img/hero-img.png" alt="Logo" style="height: 48px;" class="me-3" />
       <div>
-        <h2 class="mb-0">Welcome, {{ loggedInName || 'Investigator' }}!</h2>
+        <h2 class="mb-0">Welcome, {{ loggedInName || 'DESS User' }}!</h2>
         <small class="text-muted">{{ today }}</small>
       </div>
     </div>
