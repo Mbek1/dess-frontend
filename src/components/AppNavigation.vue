@@ -241,24 +241,40 @@ function closeMobileNav() {
 }
 
 async function loadMessages() {
+  const token = getToken();
+  if (!token) {
+    userMessages.value = [];
+    unreadMessagesCount.value = 0;
+    return;
+  }
+
+  const headers = { Authorization: `Bearer ${token}` };
+
   try {
-    const response = await fetch(`${API_CONFIG.endpoints.messages}`, {
-      credentials: 'include'
+    const response = await fetch(API_CONFIG.endpoints.messages, {
+      credentials: 'include',
+      headers
     });
-    const data = await response.json();
-    userMessages.value = data;
-    // notify listeners (e.g., InvestigatorDashboard) that messages were loaded
-    try {
-      window.dispatchEvent(new CustomEvent('messages-loaded', { detail: data }));
-    } catch (e) {
-      // ignore
+    if (!response.ok) {
+      throw new Error(`Messages request failed (${response.status})`);
     }
 
-    const unreadResp = await fetch(`${API_CONFIG.baseURL}/api/messages/unread-count`, {
-      credentials: 'include'
+    const data = await response.json();
+    userMessages.value = Array.isArray(data) ? data : [];
+
+    // Notify listeners (e.g., InvestigatorDashboard) that messages were loaded.
+    window.dispatchEvent(new CustomEvent('messages-loaded', { detail: userMessages.value }));
+
+    const unreadResp = await fetch(`${API_CONFIG.endpoints.messages}/unread-count`, {
+      credentials: 'include',
+      headers
     });
+    if (!unreadResp.ok) {
+      throw new Error(`Unread-count request failed (${unreadResp.status})`);
+    }
+
     const unreadData = await unreadResp.json();
-    unreadMessagesCount.value = unreadData.unreadCount;
+    unreadMessagesCount.value = Number(unreadData.unreadCount) || 0;
   } catch (err) {
     console.error('Error loading messages:', err);
   }
