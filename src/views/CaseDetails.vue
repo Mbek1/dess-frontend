@@ -295,7 +295,7 @@ const evidenceTypeFilter = ref('all');
 const evidenceAccessFilter = ref('all');
 const activeEvidence = computed(() => (caseItem.value?.evidence || []).filter((item: any) => !item.deleted));
 const activeEvidenceCount = computed(() => activeEvidence.value.length);
-const evidenceTypes = computed(() => [...new Set(activeEvidence.value.map((item: any) => String(item.type || 'Other')))].sort());
+const evidenceTypes = computed<string[]>(() => Array.from(new Set<string>(activeEvidence.value.map((item: any): string => String(item.type || 'Other')))).sort((a, b) => a.localeCompare(b)));
 const filteredEvidence = computed(() => {
   const query = evidenceSearch.value.trim().toLowerCase();
   return activeEvidence.value.filter((item: any) => {
