@@ -15,7 +15,7 @@
       </article>
       <article class="metric-panel" :class="{ 'metric-attention': stats.pendingDeletionVotes > 0 }">
         <span class="metric-icon votes-icon"><i class="bi bi-ui-checks" aria-hidden="true"></i></span>
-        <span class="metric-copy"><small>Pending deletion votes</small><strong>{{ stats.pendingDeletionVotes }}</strong><span>Investigator team decisions</span></span>
+        <span class="metric-copy"><small>Pending deletion votes</small><strong>{{ stats.pendingDeletionVotes }}</strong><span>DESS team decisions</span></span>
       </article>
     </section>
 
