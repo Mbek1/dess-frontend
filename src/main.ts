@@ -9,6 +9,27 @@ import API_CONFIG from './config'
 
 const app = createApp(App)
 
+function applySavedTheme() {
+    try {
+        const saved = JSON.parse(localStorage.getItem('dess_settings') || '{}')
+        const choice = saved.theme === 'auto' ? 'system' : saved.theme
+        const theme = choice === 'dark' || (choice === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+            ? 'dark'
+            : 'light'
+        document.documentElement.dataset.dessTheme = theme
+        document.documentElement.dataset.dessThemeChoice = ['light', 'dark', 'system'].includes(choice) ? choice : 'light'
+    } catch {
+        document.documentElement.dataset.dessTheme = 'light'
+        document.documentElement.dataset.dessThemeChoice = 'light'
+    }
+}
+
+applySavedTheme()
+window.addEventListener('dess-settings-updated', applySavedTheme)
+window.addEventListener('storage', (event) => {
+    if (event.key === 'dess_settings') applySavedTheme()
+})
+
 // ======================================================
 // CENTRAL API CONFIGURATION
 // ======================================================
