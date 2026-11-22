@@ -121,6 +121,8 @@ describe('MessagesPage', () => {
     await wrapper.find('.conversation-row').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('assigned DESS users')
+    expect(wrapper.text()).toContain('Room information')
+    expect(wrapper.text()).toContain('Assigned DESS users')
     await wrapper.find('#case-chat-body').setValue('Group status update')
     await wrapper.find('.reply-composer').trigger('submit')
     await flushPromises()
