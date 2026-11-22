@@ -232,9 +232,11 @@ async function saveStatus() {
     const index = records.value.findIndex(record => record._id === updated._id);
     if (index >= 0) {
       if (statusFilter.value && statusFilter.value !== updated.status) {
-        records.value.splice(index, 1);
-        if (records.value.length) selectFeedback(records.value[Math.min(index, records.value.length - 1)]);
-        else selectedId.value = '';
+        // Clear the now-inaccurate filter so the updated submission remains visible.
+        statusFilter.value = '';
+        await loadFeedback(1);
+        const refreshedItem = records.value.find(record => record._id === updated._id);
+        if (refreshedItem) selectFeedback(refreshedItem);
       } else {
         records.value.splice(index, 1, updated);
         statusDraft.value = updated.status;
