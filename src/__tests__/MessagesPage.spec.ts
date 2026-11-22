@@ -120,7 +120,7 @@ describe('MessagesPage', () => {
     expect(wrapper.text()).toContain('2026-001 · Archived case')
     await wrapper.find('.conversation-row').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('assigned investigators')
+    expect(wrapper.text()).toContain('assigned DESS users')
     await wrapper.find('#case-chat-body').setValue('Group status update')
     await wrapper.find('.reply-composer').trigger('submit')
     await flushPromises()
