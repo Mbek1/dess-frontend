@@ -4,7 +4,8 @@
       <div>
         <p class="messages-eyebrow"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i> DESS WORKSPACE / CASE-AWARE MESSAGING</p>
         <h1>Messages</h1>
-        <p>Secure, case-aware communication between authorized DESS users.</p>
+        <p v-if="currentUserRole === 'investigator'">Your assigned case group chats appear here. Switch folders for direct messages.</p>
+        <p v-else>Secure, case-aware communication between authorized DESS users.</p>
       </div>
       <div class="heading-actions">
         <span class="connection-status"><i class="bi bi-circle-fill" aria-hidden="true"></i> Authenticated workspace</span>
