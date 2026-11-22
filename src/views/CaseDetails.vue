@@ -35,12 +35,31 @@
         <button class="btn btn-outline-primary" @click="showAddEvidence = true"><i class="bi bi-plus-circle"></i> Add Evidence</button>
       </div>
     </div>
-    <!-- Evidence Section -->
-    <div class="evidence-section card p-4 mb-4">
-      <h4 class="mb-3 fw-semibold text-dark">Evidence</h4>
-      <div v-if="caseItem.evidence && caseItem.evidence.filter((ev: any) => !ev.deleted).length">
+    <nav class="case-workspace-tabs mb-3" aria-label="Case workspace sections">
+      <button type="button" :class="{ active: activeCaseTab === 'evidence' }" @click="activeCaseTab = 'evidence'"><i class="bi bi-folder2-open"></i> Evidence workspace <span>{{ activeEvidenceCount }}</span></button>
+      <button type="button" :class="{ active: activeCaseTab === 'activity' }" @click="activeCaseTab = 'activity'"><i class="bi bi-clock-history"></i> Activity timeline <span>{{ caseItem.auditLog?.length || 0 }}</span></button>
+    </nav>
+    <!-- Evidence workspace -->
+    <div v-if="activeCaseTab === 'evidence'" class="evidence-section card p-4 mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div><h4 class="mb-1 fw-semibold text-dark">Evidence workspace</h4><p class="text-muted small mb-0">Search, filter, review and verify files linked to this case.</p></div>
+        <span class="text-muted small">{{ filteredEvidence.length }} of {{ activeEvidenceCount }} items</span>
+      </div>
+      <div class="evidence-filters mb-3">
+        <input v-model="evidenceSearch" type="search" class="form-control" placeholder="Search evidence name, filename or description" aria-label="Search evidence" />
+        <select v-model="evidenceTypeFilter" class="form-select" aria-label="Filter evidence by type">
+          <option value="all">All evidence types</option>
+          <option v-for="type in evidenceTypes" :key="type" :value="type">{{ type }}</option>
+        </select>
+        <select v-model="evidenceAccessFilter" class="form-select" aria-label="Filter evidence by access">
+          <option value="all">All access levels</option>
+          <option value="shared">Shared with researchers</option>
+          <option value="private">DESS team only</option>
+        </select>
+      </div>
+      <div v-if="filteredEvidence.length">
         <ul class="list-group evidence-list">
-          <li v-for="ev in caseItem.evidence.filter((ev: any) => !ev.deleted)" :key="ev._id || ev.filename" class="list-group-item d-flex align-items-center gap-3">
+          <li v-for="ev in filteredEvidence" :key="ev._id || ev.filename" class="list-group-item d-flex align-items-center gap-3">
             <div class="evidence-icon"><i class="bi bi-file-earmark-text"></i></div>
             <div class="flex-grow-1">
               <div class="fw-semibold">{{ ev.name || ev.filename }}</div>
@@ -83,9 +102,8 @@
         </ul>
       </div>
       <div v-else class="text-center text-muted py-4">
-        <img src="/img/no-evidence.svg" alt="No evidence" style="height: 80px;" class="mb-2" />
-        <div>No evidence uploaded for this case yet.</div>
-        <button class="btn btn-outline-primary mt-3" @click="showAddEvidence = true"><i class="bi bi-plus-circle"></i> Add Evidence</button>
+        <div v-if="activeEvidenceCount === 0"><img src="/img/no-evidence.svg" alt="No evidence" style="height: 80px;" class="mb-2" /><div>No evidence uploaded for this case yet.</div><button class="btn btn-outline-primary mt-3" @click="showAddEvidence = true"><i class="bi bi-plus-circle"></i> Add Evidence</button></div>
+        <div v-else><i class="bi bi-search fs-3"></i><div class="mt-2">No evidence matches these filters.</div><button class="btn btn-link btn-sm" @click="clearEvidenceFilters">Clear filters</button></div>
       </div>
       <div v-if="evidencePreview" class="evidence-preview-backdrop" @click.self="closeEvidencePreview">
         <section class="evidence-preview-dialog" role="dialog" aria-modal="true" :aria-label="`Evidence preview: ${evidencePreview.name}`">
@@ -129,6 +147,24 @@
       </div>
       <!-- ...existing code for empty state and single delete modal... -->
     </div>
+    <section v-if="activeCaseTab === 'activity'" class="evidence-section card p-4 mb-4 activity-timeline">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div><h4 class="mb-1 fw-semibold text-dark">Case activity timeline</h4><p class="text-muted small mb-0">A chronological record of case, team and evidence actions.</p></div>
+        <span class="text-muted small">{{ sortedActivity.length }} recorded events</span>
+      </div>
+      <div v-if="sortedActivity.length" class="activity-list">
+        <article v-for="event in sortedActivity" :key="event._id || event.date + event.action" class="activity-item">
+          <span class="activity-marker"><i class="bi" :class="activityIcon(event.action)"></i></span>
+          <div class="activity-content">
+            <div class="d-flex flex-wrap justify-content-between gap-2"><strong>{{ event.description || event.action }}</strong><time>{{ formatActivityDate(event.date) }}</time></div>
+            <div class="activity-meta">{{ event.performedBy?.name || 'System' }}<span v-if="event.performedBy?.email"> · {{ event.performedBy.email }}</span><span v-if="event.type"> · {{ event.type.replaceAll('_', ' ') }}</span></div>
+            <div v-if="event.filename" class="activity-file"><i class="bi bi-paperclip"></i> {{ event.filename }}</div>
+            <details v-if="event.details && Object.keys(event.details).length" class="activity-details"><summary>View event details</summary><pre>{{ JSON.stringify(event.details, null, 2) }}</pre></details>
+          </div>
+        </article>
+      </div>
+      <div v-else class="text-center text-muted py-5"><i class="bi bi-clock-history fs-2"></i><p class="mt-2 mb-0">No activity has been recorded for this case yet.</p></div>
+    </section>
     <!-- Add Evidence Modal -->
     <div v-if="showAddEvidence" class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,0.3);">
       <div class="modal-dialog">
@@ -247,12 +283,38 @@ async function deleteEvidence() {
     requestingDeletion.value = false;
   }
 }
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import axios from 'axios';
 
 const route = useRoute();
 const caseItem = ref<any>(null);
+const activeCaseTab = ref<'evidence' | 'activity'>('evidence');
+const evidenceSearch = ref('');
+const evidenceTypeFilter = ref('all');
+const evidenceAccessFilter = ref('all');
+const activeEvidence = computed(() => (caseItem.value?.evidence || []).filter((item: any) => !item.deleted));
+const activeEvidenceCount = computed(() => activeEvidence.value.length);
+const evidenceTypes = computed(() => [...new Set(activeEvidence.value.map((item: any) => String(item.type || 'Other')))].sort());
+const filteredEvidence = computed(() => {
+  const query = evidenceSearch.value.trim().toLowerCase();
+  return activeEvidence.value.filter((item: any) => {
+    const matchesQuery = !query || [item.name, item.filename, item.originalName, item.description, item.format, item.type].some(value => String(value || '').toLowerCase().includes(query));
+    const matchesType = evidenceTypeFilter.value === 'all' || String(item.type || 'Other') === evidenceTypeFilter.value;
+    const matchesAccess = evidenceAccessFilter.value === 'all' || (evidenceAccessFilter.value === 'shared' ? item.visibleToResearchers === true : item.visibleToResearchers !== true);
+    return matchesQuery && matchesType && matchesAccess;
+  }).sort((a: any, b: any) => new Date(b.uploadedAt || 0).getTime() - new Date(a.uploadedAt || 0).getTime());
+});
+const sortedActivity = computed(() => [...(caseItem.value?.auditLog || [])].sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()));
+function clearEvidenceFilters() { evidenceSearch.value = ''; evidenceTypeFilter.value = 'all'; evidenceAccessFilter.value = 'all'; }
+function formatActivityDate(value: string) { return value ? new Date(value).toLocaleString() : 'Date unavailable'; }
+function activityIcon(action: string) {
+  if (String(action).includes('EVIDENCE') || String(action).includes('HASH')) return 'bi-file-earmark-check';
+  if (String(action).includes('TEAM')) return 'bi-people';
+  if (String(action).includes('CLOSE')) return 'bi-lock';
+  if (String(action).includes('CREATE')) return 'bi-plus-circle';
+  return 'bi-pencil-square';
+}
 const loadingCase = ref(true);
 const caseError = ref('');
 const showAddEvidence = ref(false);
@@ -406,6 +468,22 @@ async function verifyEvidence(ev: any) {
 </script>
 
 <style scoped>
+.case-workspace-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.case-workspace-tabs button { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 9px 14px; border: 1px solid #dbe5f1; border-radius: 9px; color: #52647c; background: #fff; font-weight: 650; }
+.case-workspace-tabs button.active { border-color: #9db9e8; color: #174f9d; background: #edf4ff; }
+.case-workspace-tabs button span { display: inline-grid; min-width: 21px; height: 21px; place-items: center; padding: 0 5px; border-radius: 12px; background: #e6edf7; font-size: .7rem; }
+.evidence-filters { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(160px, 1fr)); gap: 9px; }
+.activity-list { display: grid; gap: 0; }
+.activity-item { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid #edf1f6; }
+.activity-marker { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid #d7e5f7; border-radius: 50%; color: #2563a8; background: #eff6ff; }
+.activity-content { min-width: 0; }
+.activity-content strong { color: #27384f; font-size: .88rem; }
+.activity-content time,.activity-meta { color: #7e8da2; font-size: .72rem; }
+.activity-meta { margin-top: 5px; }
+.activity-file { margin-top: 6px; color: #536b8a; font-size: .75rem; overflow-wrap: anywhere; }
+.activity-details { margin-top: 8px; color: #52647c; font-size: .75rem; }
+.activity-details pre { max-height: 220px; overflow: auto; margin-top: 7px; padding: 10px; border-radius: 7px; color: #d9e8f8; background: #14283f; font-size: .7rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .evidence-filters { grid-template-columns: 1fr; } .case-workspace-tabs button { flex: 1 1 100%; justify-content: center; } .activity-item { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; } .activity-marker { width: 27px; height: 27px; } }
 .case-details-bg {
   background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%);
   min-height: 100vh;
