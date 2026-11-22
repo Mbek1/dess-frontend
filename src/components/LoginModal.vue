@@ -14,7 +14,7 @@
           </button>
 
           <button class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center gap-2" @click="goTo('login', 'investigator')">
-            <i class="bi bi-shield-lock fs-3"></i> Practitioner Portal
+            <i class="bi bi-shield-lock fs-3"></i> DESS Portal
           </button>
           
           <button class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2" @click="goHome">
@@ -37,7 +37,7 @@
             <input v-model="password" type="password" class="form-control" required />
           </div>
           <div class="mb-3">
-            <label class="form-label">Portal</label>
+            <label class="form-label">Account Type</label>
             <input class="form-control" :value="roleLabel(role)" disabled />
           </div>
           <div class="mb-3 text-end">
@@ -68,10 +68,10 @@
             <input v-model="password" type="password" class="form-control" required />
           </div>
           <div class="mb-3">
-            <label class="form-label">Portal</label>
+            <label class="form-label">Account Type</label>
             <select v-model="role" class="form-select" required>
               <option value="researcher">Repository</option>
-              <option value="investigator">Practitioner Portal</option>
+              <option value="investigator">DESS Portal</option>
             </select>
           </div>
           <button type="submit" class="btn btn-success w-100">Sign Up</button>
@@ -181,7 +181,7 @@ function onSignup() {
     });
 }
 function roleLabel(role: string) {
-  return role === 'researcher' ? 'Repository' : 'Practitioner Portal';
+  return role === 'researcher' ? 'Case Repository' : 'DESS Portal';
 }
 const lawIcons = [
   'bi bi-balance-scale',
