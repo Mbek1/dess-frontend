@@ -4,17 +4,17 @@
     <!-- Header -->
     <header id="header" class="header d-flex align-items-center fixed-top">
       <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
-        <a href="index.html" class="logo d-flex align-items-center">
+        <a href="#" @click.prevent="scrollToSection('hero')" class="logo d-flex align-items-center">
           <h1 class="sitename">DESS</h1>
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>
-            <li><a href="#" class="active" @click.prevent="scrollToSection('hero')">Home</a></li>
-            <li><a href="#" @click.prevent="scrollToSection('about')">About DESS</a></li>
-            <li><a href="#" @click.prevent="scrollToSection('how-it-works')">How It Works</a></li>
-            <li><a href="#" @click.prevent="scrollToSection('features')">Features</a></li>
-            <li><a href="#" @click.prevent="scrollToSection('audience')">Who It's For</a></li>
-            <li><a href="#" @click.prevent="scrollToSection('faq')">FAQs</a></li>
+            <li><a href="#" data-scroll-target="hero" class="active" @click.prevent="scrollToSection('hero')">Home</a></li>
+            <li><a href="#" data-scroll-target="about" @click.prevent="scrollToSection('about')">About DESS</a></li>
+            <li><a href="#" data-scroll-target="how-it-works" @click.prevent="scrollToSection('how-it-works')">How It Works</a></li>
+            <li><a href="#" data-scroll-target="features" @click.prevent="scrollToSection('features')">Features</a></li>
+            <li><a href="#" data-scroll-target="audience" @click.prevent="scrollToSection('audience')">Who It's For</a></li>
+            <li><a href="#" data-scroll-target="faq" @click.prevent="scrollToSection('faq')">FAQs</a></li>
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
