@@ -51,6 +51,7 @@
 
           <AdminDashboardOverview v-show="currentModule === 'dashboard'" :stats="dashboardStats" @open-audit="selectModule('audit')" />
           <AdminUserManagement v-show="currentModule === 'users'" />
+          <AdminFeedbackInbox v-show="currentModule === 'feedback'" />
           <AdminSecurityPolicy v-show="currentModule === 'security'" />
           <AdminCaseOversight v-show="currentModule === 'cases'" />
           <AdminAuditLogs v-show="currentModule === 'audit'" />
@@ -68,6 +69,7 @@ import { useRouter } from 'vue-router';
 import axios from 'axios';
 import AdminDashboardOverview from '@/components/admin/AdminDashboardOverview.vue';
 import AdminUserManagement from '@/components/admin/AdminUserManagement.vue';
+import AdminFeedbackInbox from '@/components/admin/AdminFeedbackInbox.vue';
 import AdminSecurityPolicy from '@/components/admin/AdminSecurityPolicy.vue';
 import AdminCaseOversight from '@/components/admin/AdminCaseOversight.vue';
 import AdminAuditLogs from '@/components/admin/AdminAuditLogs.vue';
@@ -88,6 +90,7 @@ const navItems = [
   { id: 'users', label: 'User management', icon: 'people-fill' },
   { id: 'security', label: 'Security & policy', icon: 'shield-lock' },
   { id: 'cases', label: 'Case oversight', icon: 'folder2-open' },
+  { id: 'feedback', label: 'Feedback inbox', icon: 'chat-square-heart' },
   { id: 'audit', label: 'Audit records', icon: 'journal-text' },
   { id: 'reporting', label: 'Reports', icon: 'file-earmark-bar-graph' },
   { id: 'settings', label: 'System settings', icon: 'sliders' }
@@ -98,6 +101,7 @@ const moduleDescriptions: Record<string, string> = {
   users: 'Review user accounts, roles, and access status.',
   security: 'Manage security controls and system policy.',
   cases: 'Review case records and evidence access.',
+  feedback: 'Review user submissions and track their resolution status.',
   audit: 'Search recorded administrative and system events.',
   reporting: 'Generate operational and compliance reports.',
   settings: 'Configure system-wide settings.'
