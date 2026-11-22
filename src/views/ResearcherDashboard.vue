@@ -18,7 +18,7 @@
       <div class="stat-item"><span class="stat-icon"><i class="bi bi-folder2-open" aria-hidden="true"></i></span><span class="stat-copy"><small>Closed cases</small><strong>{{ stats.closedCases }}</strong></span></div>
       <div class="stat-item"><span class="stat-icon"><i class="bi bi-file-earmark-check" aria-hidden="true"></i></span><span class="stat-copy"><small>Shared evidence files</small><strong>{{ stats.sharedEvidence }}</strong></span></div>
       <div class="stat-item"><span class="stat-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span><span class="stat-copy"><small>Research-restricted items</small><strong>{{ stats.restrictedEvidence }}</strong></span></div>
-      <div class="stat-aside"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Case and evidence access is controlled by investigators.</span></div>
+      <div class="stat-aside"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Case and evidence access is managed by the assigned DESS team.</span></div>
     </section>
 
     <section v-if="showNotifications" class="activity-panel" aria-labelledby="activity-heading">
@@ -79,9 +79,9 @@
             </article>
           </div>
           <div v-else class="restricted-only">No evidence files have been shared with researchers.</div>
-          <div v-if="restrictedCount(selectedCase)" class="restricted-summary"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i><span><strong>{{ restrictedCount(selectedCase) }} restricted evidence item(s)</strong><small>These items remain visible to the investigative team and are omitted from this case download.</small></span></div>
+          <div v-if="restrictedCount(selectedCase)" class="restricted-summary"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i><span><strong>{{ restrictedCount(selectedCase) }} restricted evidence item(s)</strong><small>These items remain visible to the assigned DESS team and are omitted from this case download.</small></span></div>
         </div>
-        <footer class="dialog-footer"><span><i class="bi bi-shield-check" aria-hidden="true"></i> Research access is set by the case investigators.</span><button class="download-button" type="button" :disabled="downloadingId === selectedCase._id" @click="downloadCase(selectedCase)"><i class="bi bi-download" aria-hidden="true"></i> Download available files</button></footer>
+        <footer class="dialog-footer"><span><i class="bi bi-shield-check" aria-hidden="true"></i> Research access is managed by the assigned DESS team.</span><button class="download-button" type="button" :disabled="downloadingId === selectedCase._id" @click="downloadCase(selectedCase)"><i class="bi bi-download" aria-hidden="true"></i> Download available files</button></footer>
       </section>
     </div>
 
@@ -89,7 +89,7 @@
       <section class="case-dialog open-case-dialog" role="dialog" aria-modal="true" aria-labelledby="open-case-title">
         <header class="dialog-header"><div><p class="section-eyebrow">SEARCH RESULT</p><h2 id="open-case-title">{{ openCaseError.caseId }}</h2><p>{{ openCaseError.name }}</p></div><button class="icon-button" type="button" aria-label="Close case notice" @click="openCaseError = null"><i class="bi bi-x-lg" aria-hidden="true"></i></button></header>
         <div class="dialog-content"><div class="open-case-status"><i class="bi bi-hourglass-split" aria-hidden="true"></i><span>This case is still open. Repository access becomes available after closure.</span></div><div v-if="openCaseError.createdBy" class="case-manager"><span class="person-initials">{{ initials(openCaseError.createdBy.name) }}</span><span><strong>{{ openCaseError.createdBy.name }}</strong><small>Case manager · {{ openCaseError.createdBy.email }}</small></span></div></div>
-        <footer class="dialog-footer"><span>Contact is sent through DESS internal messages.</span><button v-if="openCaseError.createdBy" class="download-button" type="button" @click="contactInvestigator"><i class="bi bi-send" aria-hidden="true"></i> Contact investigator</button></footer>
+        <footer class="dialog-footer"><span>Contact is sent through DESS internal messages.</span><button v-if="openCaseError.createdBy" class="download-button" type="button" @click="contactInvestigator"><i class="bi bi-send" aria-hidden="true"></i> Contact case lead</button></footer>
       </section>
     </div>
   </main>
