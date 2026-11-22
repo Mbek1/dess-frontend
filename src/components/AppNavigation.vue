@@ -2,7 +2,7 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
     <div class="container-fluid">
       <!-- Logo/Brand -->
-      <router-link :to="dashboardRoute" class="navbar-brand fw-bold">
+      <router-link :to="dashboardRoute" class="navbar-brand fw-bold" @click="closeMobileNav">
         <i class="bi bi-shield-lock"></i> DESS
       </router-link>
 
@@ -10,38 +10,37 @@
       <button
         class="navbar-toggler"
         type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarNav"
         aria-controls="navbarNav"
-        aria-expanded="false"
+        :aria-expanded="isMobileNavOpen"
         aria-label="Toggle navigation"
+        @click="toggleMobileNav"
       >
         <span class="navbar-toggler-icon"></span>
       </button>
 
       <!-- Navigation Menu -->
-      <div class="collapse navbar-collapse" id="navbarNav">
+      <div id="navbarNav" class="collapse navbar-collapse" :class="{ show: isMobileNavOpen }">
         <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
           <!-- Role-based navigation -->
           <li class="nav-item" v-if="userRole === 'investigator'">
-            <router-link to="/investigator" class="nav-link" active-class="active">
+            <router-link to="/investigator" class="nav-link" active-class="active" @click="closeMobileNav">
               <i class="bi bi-speedometer2"></i> Dashboard
             </router-link>
           </li>
           <li class="nav-item" v-else-if="userRole === 'researcher'">
-            <router-link to="/researcher" class="nav-link" active-class="active">
+            <router-link to="/researcher" class="nav-link" active-class="active" @click="closeMobileNav">
               <i class="bi bi-book"></i> Repository
             </router-link>
           </li>
           <li class="nav-item" v-else-if="userRole === 'admin'">
-            <router-link to="/admin" class="nav-link" active-class="active">
+            <router-link to="/admin" class="nav-link" active-class="active" @click="closeMobileNav">
               <i class="bi bi-gear"></i> Admin Panel
             </router-link>
           </li>
 
           <!-- Archives (for authenticated users) -->
           <li class="nav-item" v-if="isAuthenticated && userRole === 'investigator'">
-            <router-link to="/archives" class="nav-link" active-class="active">
+            <router-link to="/archives" class="nav-link" active-class="active" @click="closeMobileNav">
               <i class="bi bi-archive"></i> Archives
             </router-link>
           </li>
@@ -127,12 +126,12 @@
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
-                  <a class="dropdown-item" @click="goToProfileAndClose">
+                  <a class="dropdown-item" role="button" @click="goToProfileAndClose">
                     <i class="bi bi-person"></i> My Profile
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" @click="goToSettingsAndClose">
+                  <a class="dropdown-item" role="button" @click="goToSettingsAndClose">
                     <i class="bi bi-gear"></i> Settings
                   </a>
                 </li>
@@ -148,7 +147,7 @@
 
           <!-- Login Button (for unauthenticated users) -->
           <li class="nav-item" v-if="!isAuthenticated">
-            <router-link to="/login" class="btn btn-success">
+            <router-link to="/login" class="btn btn-success" @click="closeMobileNav">
               <i class="bi bi-box-arrow-in-right"></i> Login
             </router-link>
           </li>
@@ -217,6 +216,7 @@ const unreadMessagesCount = ref(0);
 const showNotificationBadges = ref(true);
 const showMessagesModal = ref(false);
 const showProfileDropdown = ref(false);
+const isMobileNavOpen = ref(false);
 const dashboardRoute = computed(() => {
   if (!isAuthenticated.value) return '/';
   if (userRole.value === 'researcher') return '/researcher';
@@ -227,6 +227,18 @@ const dashboardRoute = computed(() => {
 const userMessages = ref<any[]>([]);
 
 const getToken = () => sessionStorage.getItem('dess_token') || '';
+
+function toggleMobileNav() {
+  isMobileNavOpen.value = !isMobileNavOpen.value;
+  if (!isMobileNavOpen.value) {
+    showNotificationsDropdown.value = false;
+    showProfileDropdown.value = false;
+  }
+}
+
+function closeMobileNav() {
+  isMobileNavOpen.value = false;
+}
 
 async function loadMessages() {
   try {
@@ -322,10 +334,14 @@ async function logout() {
   notifications.value = [];
   unreadNotificationCount.value = 0;
   showMessagesModal.value = false;
+  closeMobileNav();
   router.push('/');
 }
 
 async function openMessages() {
+  closeMobileNav();
+  showNotificationsDropdown.value = false;
+  showProfileDropdown.value = false;
   await router.push('/messages');
 }
 
@@ -334,6 +350,9 @@ function closeMessages() {
 }
 
 function showCreateCaseModal() {
+  closeMobileNav();
+  showNotificationsDropdown.value = false;
+  showProfileDropdown.value = false;
   router.push({ path: '/archives', query: { createCase: 'true' } });
 }
 
@@ -391,6 +410,7 @@ async function openNotification(notification: Notification) {
     unreadNotificationCount.value = Math.max(0, unreadNotificationCount.value - 1);
   }
   showNotificationsDropdown.value = false;
+  closeMobileNav();
   if (notification.link) await router.push(notification.link);
 }
 
@@ -466,6 +486,7 @@ function handleClickOutside(event: MouseEvent) {
 }
 
 watch(() => route.path, () => {
+  closeMobileNav();
   checkAuth();
   if (isAuthenticated.value) void loadNotifications();
 });
@@ -674,17 +695,32 @@ watch(() => route.path, () => {
   color: #06b6d4 !important;
 }
 
-@media (max-width: 991px) {
-  .nav-link {
-    padding: 0.75rem 0 !important;
+@media (max-width: 991.98px) {
+  .navbar-collapse.show { display: block; }
+  .navbar-collapse { padding: 10px 0 14px; }
+  .navbar-nav { align-items: stretch !important; }
+  .navbar-nav > .nav-item { width: 100%; }
+  .navbar-nav > .nav-item > .btn,
+  .navbar-nav > .nav-item .position-relative > .btn {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: left;
   }
-
-  .dropdown-menu {
-    min-width: auto;
+  .nav-link { padding: 0.75rem 0 !important; }
+  .navbar-nav .vr { display: none; }
+  .notification-dropdown,.profile-dropdown {
+    position: static !important;
+    right: auto !important;
+    width: 100%;
+    max-width: 100%;
+    max-height: 48vh;
+    overflow-y: auto;
+    margin: 7px 0 10px;
   }
-
-  .notification-dropdown {
-    min-width: auto;
-  }
+  .dropdown-menu { min-width: 0; }
+  .notification-menu-item { min-width: 0; }
 }
 </style>
