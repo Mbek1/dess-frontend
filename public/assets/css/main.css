@@ -1741,3 +1741,307 @@ section,
 }
 
 
+
+
+/* DESS authenticated workspace theme overrides */
+html[data-dess-theme="dark"] body {
+  color: #dce8e1;
+  background: #0d1822;
+}
+html[data-dess-theme="dark"] .messages-page {
+  --msg-bg: #0d1923;
+  --panel: #14232e;
+  --panel-soft: #192c37;
+  --line: #294039;
+  --main: #e2eee7;
+  --muted: #a0b5a8;
+  --blue: #25b887;
+  --blue-soft: #183d32;
+  --green: #25b887;
+  color: #e2eee7;
+  background: #0d1923;
+}
+html[data-dess-theme="dark"] .messages-heading h1,
+html[data-dess-theme="dark"] .thread-heading-copy h2,
+html[data-dess-theme="dark"] .welcome-state h2,
+html[data-dess-theme="dark"] .contact-profile h4 {
+  color: #e5f1e9;
+}
+html[data-dess-theme="dark"] .messages-heading > div:first-child > p:last-child,
+html[data-dess-theme="dark"] .connection-status,
+html[data-dess-theme="dark"] .thread-heading-copy p {
+  color: #a0b5a8;
+}
+html[data-dess-theme="dark"] .message-workspace,
+html[data-dess-theme="dark"] .message-sidebar,
+html[data-dess-theme="dark"] .thread-header,
+html[data-dess-theme="dark"] .reply-composer,
+html[data-dess-theme="dark"] .contact-details,
+html[data-dess-theme="dark"] .compose-body {
+  color: #dce8e1;
+  border-color: #294039;
+  background: #14232e;
+}
+html[data-dess-theme="dark"] .message-search,
+html[data-dess-theme="dark"] .reply-composer textarea,
+html[data-dess-theme="dark"] .compose-field input,
+html[data-dess-theme="dark"] .compose-field textarea,
+html[data-dess-theme="dark"] .compose-field select,
+html[data-dess-theme="dark"] .recipient-results,
+html[data-dess-theme="dark"] .recipient-option:hover {
+  color: #e0ece4;
+  border-color: #355347;
+  background: #10202a;
+}
+html[data-dess-theme="dark"] .message-search input,
+html[data-dess-theme="dark"] .compose-field input,
+html[data-dess-theme="dark"] .compose-field textarea,
+html[data-dess-theme="dark"] .compose-field select,
+html[data-dess-theme="dark"] .reply-composer textarea {
+  color: #e0ece4;
+}
+html[data-dess-theme="dark"] .message-search input::placeholder,
+html[data-dess-theme="dark"] .reply-composer textarea::placeholder,
+html[data-dess-theme="dark"] .compose-field input::placeholder,
+html[data-dess-theme="dark"] .compose-field textarea::placeholder {
+  color: #859d8f;
+}
+html[data-dess-theme="dark"] .conversation-row {
+  border-bottom-color: #263c34;
+  color: #dce8e1;
+}
+html[data-dess-theme="dark"] .conversation-row:hover {
+  background: #1b3029;
+}
+html[data-dess-theme="dark"] .conversation-row.selected {
+  border-left-color: #25b887;
+  background: #193b30;
+  box-shadow: inset 3px 0 #25b887;
+}
+html[data-dess-theme="dark"] .conversation-meta strong,
+html[data-dess-theme="dark"] .conversation-subject,
+html[data-dess-theme="dark"] .entry-topic,
+html[data-dess-theme="dark"] .entry-byline strong,
+html[data-dess-theme="dark"] .details-panel-header h3,
+html[data-dess-theme="dark"] .details-section h4,
+html[data-dess-theme="dark"] .detail-field strong,
+html[data-dess-theme="dark"] .detail-field a,
+html[data-dess-theme="dark"] .participant-row strong {
+  color: #dcebe1;
+}
+html[data-dess-theme="dark"] .conversation-meta time,
+html[data-dess-theme="dark"] .conversation-preview,
+html[data-dess-theme="dark"] .entry-byline,
+html[data-dess-theme="dark"] .entry-meta,
+html[data-dess-theme="dark"] .detail-field > span,
+html[data-dess-theme="dark"] .participant-row small {
+  color: #91a99a;
+}
+html[data-dess-theme="dark"] .thread-scroll {
+  background-color: #10202a;
+  background-image: radial-gradient(rgba(56, 161, 117, .07) .8px, transparent .8px);
+}
+html[data-dess-theme="dark"] .entry-bubble {
+  border-color: #33483d;
+  background: #1a2d36;
+}
+html[data-dess-theme="dark"] .message-outgoing .entry-bubble {
+  border-color: #275e49;
+  background: #1b4436;
+}
+html[data-dess-theme="dark"] .entry-bubble p {
+  color: #d4e4d9;
+}
+html[data-dess-theme="dark"] .entry-meta,
+html[data-dess-theme="dark"] .details-panel-header,
+html[data-dess-theme="dark"] .contact-profile,
+html[data-dess-theme="dark"] .details-section {
+  border-color: #294039;
+}
+html[data-dess-theme="dark"] .contact-avatar,
+html[data-dess-theme="dark"] .case-room-detail-icon,
+html[data-dess-theme="dark"] .participant-avatar {
+  border-color: #28503f;
+  color: #9be2bd;
+  background: #1b4033;
+}
+html[data-dess-theme="dark"] .linked-case-card,
+html[data-dess-theme="dark"] .details-security-note {
+  border-color: #315344;
+  color: #add4ba;
+  background: #18342a;
+}
+html[data-dess-theme="dark"] .welcome-state > p:not(.messages-eyebrow),
+html[data-dess-theme="dark"] .sidebar-foot {
+  color: #9db4a5;
+}
+html[data-dess-theme="dark"] .repository-page { background: #0d1923; }
+html[data-dess-theme="dark"] .researcher-page {
+  --repo-bg: #0d1923;
+  --repo-panel: #14232e;
+  --repo-line: #294039;
+  --repo-text: #dce8e1;
+  --repo-muted: #a0b5a8;
+  color: #dce8e1;
+  background: #0d1923;
+  background-image: radial-gradient(rgba(56, 161, 117, .055) .8px, transparent .8px);
+}
+html[data-dess-theme="dark"] .repository-title h1,
+html[data-dess-theme="dark"] .activity-heading h2,
+html[data-dess-theme="dark"] .results-heading h2,
+html[data-dess-theme="dark"] .case-cell span {
+  color: #e0ece4;
+}
+html[data-dess-theme="dark"] .repository-title > p:last-child,
+html[data-dess-theme="dark"] .results-note,
+html[data-dess-theme="dark"] .stat-copy small,
+html[data-dess-theme="dark"] .stat-aside,
+html[data-dess-theme="dark"] .activity-copy small,
+html[data-dess-theme="dark"] .activity-copy time {
+  color: #9aafa1;
+}
+html[data-dess-theme="dark"] .repository-stats,
+html[data-dess-theme="dark"] .activity-panel,
+html[data-dess-theme="dark"] .repository-toolbar,
+html[data-dess-theme="dark"] .case-table-wrap,
+html[data-dess-theme="dark"] .repository-state,
+html[data-dess-theme="dark"] .repository-pagination,
+html[data-dess-theme="dark"] .case-dialog {
+  border-color: #294039;
+  background: #14232e;
+  box-shadow: none;
+}
+html[data-dess-theme="dark"] .stat-item,
+html[data-dess-theme="dark"] .activity-row,
+html[data-dess-theme="dark"] .case-table td,
+html[data-dess-theme="dark"] .case-table th,
+html[data-dess-theme="dark"] .shared-evidence-row,
+html[data-dess-theme="dark"] .dialog-header,
+html[data-dess-theme="dark"] .dialog-footer {
+  border-color: #294039;
+}
+html[data-dess-theme="dark"] .stat-icon,
+html[data-dess-theme="dark"] .brand-mark {
+  border-color: #315c49;
+  color: #9de2bd;
+  background: #1a3b30;
+}
+html[data-dess-theme="dark"] .case-search,
+html[data-dess-theme="dark"] .sort-control select {
+  border-color: #355347;
+  color: #dce8e1;
+  background: #10202a;
+}
+html[data-dess-theme="dark"] .case-search input,
+html[data-dess-theme="dark"] .sort-control select {
+  color: #dce8e1;
+}
+html[data-dess-theme="dark"] .case-table th {
+  color: #9db5a5;
+  background: #182b35;
+}
+html[data-dess-theme="dark"] .case-table td {
+  color: #c3d4c9;
+}
+html[data-dess-theme="dark"] .case-cell strong,
+html[data-dess-theme="dark"] .shared-evidence-copy strong,
+html[data-dess-theme="dark"] .evidence-heading h3,
+html[data-dess-theme="dark"] .dialog-header h2,
+html[data-dess-theme="dark"] .case-manager strong {
+  color: #a7e4bf;
+}
+html[data-dess-theme="dark"] .case-cell small,
+html[data-dess-theme="dark"] .shared-evidence-copy small,
+html[data-dess-theme="dark"] .dialog-header p:last-child,
+html[data-dess-theme="dark"] .case-description p,
+html[data-dess-theme="dark"] .dialog-footer > span {
+  color: #9bb1a2;
+}
+html[data-dess-theme="dark"] .case-type,
+html[data-dess-theme="dark"] .details-button,
+html[data-dess-theme="dark"] .pagination-actions button {
+  border-color: #355a46;
+  color: #b5ddc4;
+  background: #18352a;
+}
+html[data-dess-theme="dark"] .download-button {
+  border-color: #1b9b6c;
+  color: #fff;
+  background: #17875f;
+}
+html[data-dess-theme="dark"] .repository-pagination,
+html[data-dess-theme="dark"] .pagination-actions span {
+  color: #9bb1a2;
+}
+html[data-dess-theme="dark"] .dialog-content {
+  background: #14232e;
+}
+html[data-dess-theme="dark"] .restricted-summary,
+html[data-dess-theme="dark"] .restricted-only {
+  border-color: #355347;
+  color: #a8beaf;
+  background: #172a33;
+}
+html[data-dess-theme="dark"] .settings-page {
+  --settings-bg: #0d1923;
+  --panel-bg: #14232e;
+  --line: #294039;
+  --text-main: #dce8e1;
+  --text-muted: #a0b5a8;
+  color: #dce8e1;
+  background: #0d1923;
+  background-image: radial-gradient(rgba(56, 161, 117, .055) .8px, transparent .8px);
+}
+html[data-dess-theme="dark"] .settings-header h1,
+html[data-dess-theme="dark"] .panel-heading h2,
+html[data-dess-theme="dark"] .preference-copy strong,
+html[data-dess-theme="dark"] .setting-select-row strong,
+html[data-dess-theme="dark"] .summary-line strong,
+html[data-dess-theme="dark"] .session-dialog h2 {
+  color: #e0ece4;
+}
+html[data-dess-theme="dark"] .settings-intro,
+html[data-dess-theme="dark"] .panel-heading p,
+html[data-dess-theme="dark"] .preference-copy small,
+html[data-dess-theme="dark"] .setting-select-row small,
+html[data-dess-theme="dark"] .settings-note,
+html[data-dess-theme="dark"] .summary-line span {
+  color: #9aafa1;
+}
+html[data-dess-theme="dark"] .settings-panel,
+html[data-dess-theme="dark"] .session-dialog {
+  border-color: #294039;
+  color: #dce8e1;
+  background: #14232e;
+  box-shadow: none;
+}
+html[data-dess-theme="dark"] .preference-row,
+html[data-dess-theme="dark"] .setting-select-row,
+html[data-dess-theme="dark"] .summary-line,
+html[data-dess-theme="dark"] .session-details div {
+  border-color: #294039;
+}
+html[data-dess-theme="dark"] .theme-option,
+html[data-dess-theme="dark"] .number-select-wrap select,
+html[data-dess-theme="dark"] .session-button {
+  border-color: #355347;
+  color: #c7d9ce;
+  background: #10202a;
+}
+html[data-dess-theme="dark"] .theme-option.selected {
+  border-color: #288c63;
+  color: #a7e4bf;
+  background: #193b2f;
+}
+html[data-dess-theme="dark"] .session-details dt,
+html[data-dess-theme="dark"] .dialog-description {
+  color: #9aafa1;
+}
+html[data-dess-theme="dark"] .session-details dd {
+  color: #dce8e1;
+}
+html[data-dess-theme="dark"] .summary-status {
+  border-color: #315a45;
+  color: #a5dfbb;
+  background: #18352a;
+}
