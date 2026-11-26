@@ -30,27 +30,12 @@
     <section v-if="activeTab === 'overview'" class="row g-4">
       <div class="col-xl-7">
         <div class="workspace-panel h-100">
-          <div class="panel-heading"><div><h2>Explore closed cases</h2><p>Save cases or researcher-visible evidence for later.</p></div></div>
-          <input v-model="caseSearch" class="form-control mb-3" placeholder="Search your repository cases…" />
-          <div v-if="loading" class="text-muted py-4 text-center">Loading your research workspace…</div>
-          <div v-else-if="filteredCases.length === 0" class="empty-state">No matching closed cases were found.</div>
-          <article v-for="item in filteredCases" :key="item._id" class="case-row">
-            <div class="case-row-main">
-              <span class="case-reference">{{ item.caseId }}</span>
-              <h3>{{ item.name }}</h3>
-              <p>{{ item.description }}</p>
-              <div class="case-meta"><span>{{ item.caseType }}</span><span>{{ visibleEvidence(item).length }} shared evidence items</span></div>
-            </div>
-            <div class="case-actions">
-              <button class="btn btn-sm btn-outline-primary" @click="bookmark(item)"><i class="bi bi-bookmark-plus me-1"></i>Save case</button>
-              <button class="btn btn-sm btn-outline-secondary" @click="startNote(item)"><i class="bi bi-journal-plus me-1"></i>New note</button>
-              <router-link class="btn btn-sm btn-link" :to="'/cases/' + item._id">Open case</router-link>
-            </div>
-            <div v-if="visibleEvidence(item).length" class="evidence-picks">
-              <span>Save evidence:</span>
-              <button v-for="ev in visibleEvidence(item)" :key="ev._id" type="button" class="evidence-chip" @click="bookmark(item, ev)">{{ ev.name }}</button>
-            </div>
+          <div class="panel-heading"><div><h2>Recently saved</h2><p>Your bookmarked cases and researcher-visible evidence.</p></div><button class="btn btn-sm btn-outline-primary" @click="activeTab = 'bookmarks'">View bookmarks</button></div>
+          <article v-for="item in recentBookmarks" :key="item._id" class="saved-row">
+            <div><span class="case-reference">{{ item.caseReference }}</span><h3>{{ item.caseTitle }}</h3><p v-if="item.evidenceName">Evidence: {{ item.evidenceName }}</p><small>Saved {{ formatDate(item.createdAt) }}</small></div>
+            <div class="saved-actions"><router-link to="/researcher" class="btn btn-sm btn-outline-primary">Open repository</router-link></div>
           </article>
+          <div v-if="!workspace.bookmarks.length" class="empty-state">Browse the Case Repository and use Save on a case or shared evidence item. Your bookmarks will appear here.</div>
         </div>
       </div>
       <div class="col-xl-5">
@@ -69,10 +54,10 @@
 
     <section v-else-if="activeTab === 'bookmarks'" class="workspace-panel">
       <div class="panel-heading"><div><h2>Saved bookmarks</h2><p>Cases and individual evidence items you want to revisit.</p></div></div>
-      <div v-if="!workspace.bookmarks.length" class="empty-state">No bookmarks yet. Save a case or evidence item from the Overview tab.</div>
+      <div v-if="!workspace.bookmarks.length" class="empty-state">No bookmarks yet. Browse the Case Repository and use Save on a case or shared evidence item.</div>
       <article v-for="item in workspace.bookmarks" :key="item._id" class="saved-row">
         <div><span class="case-reference">{{ item.caseReference }}</span><h3>{{ item.caseTitle }}</h3><p v-if="item.evidenceName">Evidence: {{ item.evidenceName }}</p><small>Saved {{ formatDate(item.createdAt) }}</small></div>
-        <div class="saved-actions"><router-link :to="'/cases/' + item.caseId" class="btn btn-sm btn-outline-primary">Open</router-link><button class="btn btn-sm btn-outline-danger" @click="removeBookmark(item)">Remove</button></div>
+        <div class="saved-actions"><router-link :to="/researcher" class="btn btn-sm btn-outline-primary">Open repository</router-link><button class="btn btn-sm btn-outline-danger" @click="removeBookmark(item)">Remove</button></div>
       </article>
     </section>
 
@@ -121,7 +106,6 @@ const exporting = ref(false);
 const error = ref('');
 const notice = ref('');
 const activeTab = ref('overview');
-const caseSearch = ref('');
 const savingNote = ref(false);
 const savingCollection = ref(false);
 const editingNote = ref('');
@@ -133,9 +117,8 @@ const tabs = [
   { id: 'notes', label: 'Personal Notes', icon: 'bi bi-journal-text' },
   { id: 'collections', label: 'Collections', icon: 'bi bi-collection' }
 ];
-const filteredCases = computed(() => cases.value.filter(item => [item.caseId, item.name, item.description].some(value => String(value || '').toLowerCase().includes(caseSearch.value.toLowerCase()))));
+const recentBookmarks = computed(() => [...workspace.bookmarks].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0,5));
 const recentNotes = computed(() => [...workspace.notes].sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0,4));
-function visibleEvidence(item: CaseItem) { return (item.evidence || []).filter(ev => ev.availableToResearchers === true && !ev.deleted); }
 function formatDate(value: string) { return value ? new Date(value).toLocaleDateString() : '—'; }
 function caseLabel(id: string) { const item = cases.value.find(entry => entry._id === id); return item ? item.caseId + ' — ' + item.name : 'Case'; }
 async function loadData() {
@@ -196,7 +179,7 @@ async function exportWorkspace() {
   try {
     const response = await axios.get('/api/research-workspace/export', { responseType: 'blob' });
     const url = URL.createObjectURL(response.data);
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'DESS-Research-Workspace.doc'; anchor.click(); URL.revokeObjectURL(url);
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'DESS-Research-Workspace.html'; anchor.click(); URL.revokeObjectURL(url);
   } catch (err: any) { error.value = err?.response?.data?.error || 'Could not export workspace.'; }
   finally { exporting.value = false; }
 }
