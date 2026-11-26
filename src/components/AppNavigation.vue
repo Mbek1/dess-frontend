@@ -2,8 +2,8 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
     <div class="container-fluid">
       <!-- Logo/Brand -->
-      <router-link :to="dashboardRoute" class="navbar-brand fw-bold" @click="closeMobileNav">
-        <i class="bi bi-shield-lock"></i> DESS
+      <router-link :to="dashboardRoute" class="navbar-brand dess-brand" @click="closeMobileNav" aria-label="DESS home">
+        <img src="/img/dess-logo.svg" alt="DESS — Digital Evidence Storage System" class="dess-brand-logo" />
       </router-link>
 
       <!-- Toggle Button for Mobile -->
@@ -742,4 +742,7 @@ watch(() => route.path, () => {
   .dropdown-menu { min-width: 0; }
   .notification-menu-item { min-width: 0; }
 }
+.dess-brand { display: inline-flex; align-items: center; padding-top: .2rem; padding-bottom: .2rem; }
+.dess-brand-logo { display: block; width: 190px; max-width: 42vw; height: 48px; object-fit: contain; object-position: left center; }
+@media (max-width: 575px) { .dess-brand-logo { width: 158px; height: 42px; } }
 </style>
