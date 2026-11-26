@@ -289,6 +289,8 @@ function formatRelative(value: string) {
   return formatDate(value);
 }
 function activityIcon(kind: string) {
+  if (kind === 'REPOSITORY_DISCUSSION_REPLY') return 'bi-chat-left-text';
+  if (kind === 'RESEARCH_COLLABORATION_REQUEST' || kind === 'RESEARCH_COLLABORATION_RESPONSE') return 'bi-people';
   if (kind.includes('DELETION')) return 'bi-trash3';
   if (kind === 'EVIDENCE_UPLOAD') return 'bi-file-earmark-plus';
   if (kind === 'EVIDENCE_VISIBILITY') return 'bi-eye';
@@ -496,6 +498,8 @@ async function sendCollaborationInvite() {
 
 async function inspectCase(caseItem: CaseRecord) {
   selectedCase.value = caseItem;
+  discussionError.value = '';
+  discussionNotice.value = '';
   discussions.value = [];
   newDiscussionContent.value = '';
   discussionReplyContent.value = '';
