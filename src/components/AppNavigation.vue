@@ -39,6 +39,12 @@
             </router-link>
           </li>
 
+          <li class="nav-item" v-if="isAuthenticated && userRole === 'investigator'">
+            <router-link to="/repository-access-requests" class="nav-link" active-class="active" @click="closeMobileNav">
+              <i class="bi bi-shield-check"></i> Research access requests
+            </router-link>
+          </li>
+
           <li class="nav-item" v-if="isAuthenticated && userRole === 'researcher'">
             <router-link to="/research-workspace" class="nav-link" active-class="active" @click="closeMobileNav">
               <i class="bi bi-journal-bookmark"></i> Research Workspace
