@@ -145,8 +145,7 @@ const tabs = [
   { id: 'overview', label: 'Overview', icon: 'bi bi-grid' },
   { id: 'bookmarks', label: 'Bookmarks', icon: 'bi bi-bookmark' },
   { id: 'notes', label: 'Personal Notes', icon: 'bi bi-journal-text' },
-  { id: 'collections', label: 'Collections', icon: 'bi bi-collection' }
-,
+  { id: 'collections', label: 'Collections', icon: 'bi bi-collection' },
   { id: 'collaborations', label: 'Collaborations', icon: 'bi bi-people' }
 ];
 const recentBookmarks = computed(() => [...workspace.bookmarks].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0,5));
