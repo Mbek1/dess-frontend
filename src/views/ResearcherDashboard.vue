@@ -3,7 +3,7 @@
     <header class="repository-header">
       <div class="brand-mark"><i class="bi bi-archive-fill" aria-hidden="true"></i></div>
       <div class="repository-title">
-        <p class="repository-eyebrow">DESS / RESEARCH REPOSITORY</p>
+        <p class="repository-eyebrow">CASE REPOSITORY</p>
         <h1>Closed case library</h1>
         <p>Review archived cases and evidence approved for research access.</p>
       </div>
@@ -18,7 +18,7 @@
       <div class="stat-item"><span class="stat-icon"><i class="bi bi-folder2-open" aria-hidden="true"></i></span><span class="stat-copy"><small>Closed cases</small><strong>{{ stats.closedCases }}</strong></span></div>
       <div class="stat-item"><span class="stat-icon"><i class="bi bi-file-earmark-check" aria-hidden="true"></i></span><span class="stat-copy"><small>Shared evidence files</small><strong>{{ stats.sharedEvidence }}</strong></span></div>
       <div class="stat-item"><span class="stat-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span><span class="stat-copy"><small>Research-restricted items</small><strong>{{ stats.restrictedEvidence }}</strong></span></div>
-      <div class="stat-aside"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Case and evidence access is managed by the assigned DESS team.</span></div>
+      <div class="stat-aside"><i class="bi bi-shield-check" aria-hidden="true"></i><span>Case and evidence access is managed by authorised case teams.</span></div>
     </section>
 
     <section v-if="showNotifications" class="activity-panel" aria-labelledby="activity-heading">
@@ -62,7 +62,7 @@
               <td><span class="case-type">{{ capitalizeCase(caseItem.caseType) }}</span></td>
               <td><div class="access-counts"><span class="shared-count"><i class="bi bi-file-earmark-check" aria-hidden="true"></i>{{ sharedCount(caseItem) }} shared</span><span class="restricted-count"><i class="bi bi-lock" aria-hidden="true"></i>{{ restrictedCount(caseItem) }} restricted</span></div></td>
               <td class="date-cell">{{ formatDate(caseItem.updatedAt || caseItem.createdAt) }}</td>
-              <td class="case-actions"><button class="details-button" type="button" @click="inspectCase(caseItem)"><i class="bi bi-eye" aria-hidden="true"></i> Details</button><button class="download-button" type="button" :disabled="downloadingId === caseItem._id" @click="downloadCase(caseItem)"><i class="bi" :class="downloadingId === caseItem._id ? 'bi-arrow-repeat' : 'bi-download'" aria-hidden="true"></i>{{ downloadingId === caseItem._id ? 'Preparing' : 'Download' }}</button></td>
+              <td class="case-actions"><button class="details-button" type="button" @click="inspectCase(caseItem)"><i class="bi bi-eye" aria-hidden="true"></i> Details</button><button class="details-button" type="button" @click="saveBookmark(caseItem)"><i class="bi bi-bookmark-plus" aria-hidden="true"></i> Save</button><button class="download-button" type="button" :disabled="downloadingId === caseItem._id" @click="downloadCase(caseItem)"><i class="bi" :class="downloadingId === caseItem._id ? 'bi-arrow-repeat' : 'bi-download'" aria-hidden="true"></i>{{ downloadingId === caseItem._id ? 'Preparing' : 'Download' }}</button></td>
             </tr>
           </tbody>
         </table>
@@ -99,7 +99,7 @@
             <article v-for="evidence in sharedEvidence(selectedCase)" :key="evidence._id" class="shared-evidence-row">
               <span class="evidence-file-icon"><i class="bi bi-file-earmark-check" aria-hidden="true"></i></span>
               <span class="shared-evidence-copy"><strong>{{ evidence.name }}</strong><small>{{ evidence.type }} · {{ evidence.format }} · {{ evidence.description }}</small><code v-if="evidence.hash">SHA-256 {{ evidence.hash }}</code></span>
-              <span class="available-label">Available in archive</span>
+              <button class="evidence-save-button" type="button" @click="saveBookmark(selectedCase, evidence)"><i class="bi bi-bookmark-plus" aria-hidden="true"></i> Save</button><span class="available-label">Available in archive</span>
             </article>
           </div>
           <div v-else class="restricted-only">No evidence files have been shared with researchers.</div>
@@ -293,6 +293,22 @@ async function openNotification(notification: NotificationRecord) {
   if (notification.link) await router.push(notification.link);
 }
 
+async function saveBookmark(caseItem: CaseRecord, evidence?: EvidenceSummary) {
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/research-workspace/bookmarks`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caseId: caseItem._id, ...(evidence ? { evidenceId: evidence._id } : {}) })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok && response.status !== 409) throw new Error(data.error || 'Could not save bookmark');
+    error.value = response.status === 409 ? 'This item is already in your Research Workspace.' : '';
+    if (response.ok) error.value = evidence ? 'Evidence saved to your Research Workspace.' : 'Case saved to your Research Workspace.';
+  } catch (bookmarkError: any) {
+    error.value = bookmarkError?.message || 'Could not save bookmark.';
+  }
+}
+
 async function inspectCase(caseItem: CaseRecord) {
   selectedCase.value = caseItem;
   relatedCases.value = [];
@@ -458,8 +474,9 @@ onBeforeUnmount(() => {
 .shared-count { color: #78e1c4; }.restricted-count { color: #a4b9ce; }
 .date-cell { color: #96afc7 !important; white-space: nowrap; font-size: 9px !important; }
 .case-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.details-button,.download-button { display: inline-flex; min-height: 30px; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid #245478; border-radius: 5px; color: #b8d9f5; background: transparent; cursor: pointer; font-size: 9px; }
+.details-button,.download-button,.evidence-save-button { display: inline-flex; min-height: 30px; align-items: center; gap: 5px; padding: 6px 8px; border: 1px solid #245478; border-radius: 5px; color: #b8d9f5; background: transparent; cursor: pointer; font-size: 9px; }
 .details-button:hover { border-color: #3e8cc5; background: rgba(20, 84, 133, .25); }
+.evidence-save-button { align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid #245478; border-radius: 5px; color: #b8d9f5; background: transparent; cursor: pointer; font-size: 9px; }
 .download-button { border-color: #1378cb; color: white; background: #086cbd; }
 .download-button:hover:not(:disabled) { background: #1288e8; }
 .download-button:disabled { opacity: .55; cursor: wait; }
@@ -555,7 +572,7 @@ onBeforeUnmount(() => {
 .case-type { border-color: #dbece1; color: #327653; background: #f0f8f3; }
 .shared-count { color: #16895f; }.restricted-count { color: #87948b; }
 .date-cell { color: #7d8b82 !important; }
-.details-button,.download-button { border-color: #cfe5d7; color: #257553; background: #fff; }
+.details-button,.download-button,.evidence-save-button { border-color: #cfe5d7; color: #257553; background: #fff; }
 .details-button:hover { border-color: #a2d8b7; background: #f1faf5; }
 .download-button { border-color: #18ac78; color: #fff; background: #17ad78; }
 .download-button:hover:not(:disabled) { background: #0e9465; }

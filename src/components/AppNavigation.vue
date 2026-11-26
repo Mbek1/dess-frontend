@@ -2,8 +2,9 @@
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top">
     <div class="container-fluid">
       <!-- Logo/Brand -->
-      <router-link :to="dashboardRoute" class="navbar-brand dess-brand" @click="closeMobileNav" aria-label="DESS home">
-        <img src="/img/dess-logo.svg" alt="DESS — Digital Evidence Storage System" class="dess-brand-logo" />
+      <router-link :to="dashboardRoute" class="navbar-brand dess-brand" @click="closeMobileNav" :aria-label="userRole === 'researcher' ? 'Case Repository home' : 'DESS home'">
+        <span v-if="userRole === 'researcher'" class="repository-brand"><i class="bi bi-journal-richtext"></i><span>CASE <strong>REPOSITORY</strong></span></span>
+        <img v-else src="/img/dess-logo.svg" alt="DESS — Digital Evidence Storage System" class="dess-brand-logo" />
       </router-link>
 
       <!-- Toggle Button for Mobile -->
@@ -761,6 +762,9 @@ watch(() => route.path, () => {
   .notification-menu-item { min-width: 0; }
 }
 .dess-brand { display: inline-flex; align-items: center; padding-top: .2rem; padding-bottom: .2rem; }
+.repository-brand { display: inline-flex; align-items: center; gap: 10px; color: #e8f5ff; font-size: 1rem; letter-spacing: .08em; font-weight: 500; white-space: nowrap; }
+.repository-brand i { color: #69d6cf; font-size: 1.65rem; }
+.repository-brand strong { color: #69d6cf; font-weight: 800; }
 .dess-brand-logo { display: block; width: 190px; max-width: 42vw; height: 48px; object-fit: contain; object-position: left center; }
 @media (max-width: 575px) { .dess-brand-logo { width: 158px; height: 42px; } }
 </style>
