@@ -38,6 +38,12 @@
             </router-link>
           </li>
 
+          <li class="nav-item" v-if="isAuthenticated && userRole === 'researcher'">
+            <router-link to="/research-workspace" class="nav-link" active-class="active" @click="closeMobileNav">
+              <i class="bi bi-journal-bookmark"></i> Research Workspace
+            </router-link>
+          </li>
+
           <li class="nav-item" v-if="isAuthenticated && (userRole === 'researcher' || userRole === 'investigator')">
             <router-link to="/organizations" class="nav-link" active-class="active" @click="closeMobileNav">
               <i class="bi bi-buildings"></i> Organisations

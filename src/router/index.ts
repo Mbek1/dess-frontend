@@ -14,6 +14,7 @@ import AdminLoginPage from '../views/AdminLoginPage.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import MessagesPage from '../views/MessagesPage.vue';
 import OrganizationsPage from '../views/OrganizationsPage.vue';
+import ResearchWorkspace from '../views/ResearchWorkspace.vue';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -44,6 +45,11 @@ const router = createRouter({
       path: '/',
       name: 'LandingPage',
       component: LandingPage,
+    },
+    {
+      path: '/research-workspace',
+      name: 'ResearchWorkspace',
+      component: ResearchWorkspace,
     },
     {
       path: '/organizations',
