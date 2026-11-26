@@ -627,6 +627,7 @@ async function submitRepositoryReport() {
     reportNotice.value = data.message || 'Your report has been sent to the moderation team.';
     reportTarget.value = null;
     reportDescription.value = '';
+    bookmarkNotice.value = reportNotice.value;
     discussionNotice.value = reportNotice.value;
   } catch (submitError: any) {
     reportError.value = submitError?.message || 'Could not submit the report.';
