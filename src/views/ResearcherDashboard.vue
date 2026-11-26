@@ -109,6 +109,7 @@
               <button class="discussion-refresh" type="button" @click="loadDiscussions(selectedCase._id)" :disabled="discussionsLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
             </div>
             <div v-if="discussionError" class="discussion-alert">{{ discussionError }}</div>
+            <div v-if="discussionNotice" class="discussion-notice">{{ discussionNotice }}</div>
             <form class="discussion-composer" @submit.prevent="postDiscussion">
               <label :for="'discussion-new-' + selectedCase._id">Start a discussion</label>
               <textarea :id="'discussion-new-' + selectedCase._id" v-model="newDiscussionContent" rows="3" maxlength="5000" placeholder="Share a research question, observation or finding..." required></textarea>
@@ -224,6 +225,7 @@ const openCaseError = ref<any>(null);
 const discussions = ref<any[]>([]);
 const discussionsLoading = ref(false);
 const discussionError = ref('');
+const discussionNotice = ref('');
 const newDiscussionContent = ref('');
 const discussionReplyContent = ref('');
 const replyingToDiscussionId = ref('');
@@ -473,6 +475,7 @@ async function sendCollaborationInvite() {
   if (!selectedCase.value || !collaborationTarget.value?._id) return;
   sendingCollaborationInvite.value = true;
   discussionError.value = '';
+  discussionNotice.value = '';
   try {
     const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/cases/${selectedCase.value._id}/collaboration-requests`, {
       method: 'POST',
@@ -483,7 +486,7 @@ async function sendCollaborationInvite() {
     if (!response.ok) throw new Error(data.error || 'Could not send collaboration invitation');
     collaborationTarget.value = null;
     collaborationMessage.value = '';
-    discussionError.value = 'Collaboration invitation sent. Track its status in your Research Workspace.';
+    discussionNotice.value = 'Collaboration invitation sent. Track its status in your Research Workspace.';
   } catch (inviteError: any) {
     discussionError.value = inviteError?.message || 'Could not send collaboration invitation.';
   } finally {
@@ -636,6 +639,7 @@ onBeforeUnmount(() => {
 .discussion-compose-footer,.discussion-reply-form > div,.collaboration-invite-panel > div:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
 .discussion-compose-footer small { margin-right: auto; color: #91a097; font-size: 8px; }
 .discussion-compose-footer button,.collaboration-invite-panel > div:last-child button:last-child { border-color: #18ac78; color: #fff; background: #17ad78; }
+.discussion-notice { padding: 8px 10px; border: 1px solid #cce8d7; border-radius: 5px; color: #287750; background: #f1faf4; font-size: 9px; }
 .discussion-alert { padding: 8px 10px; border: 1px solid #f0d6c8; border-radius: 5px; color: #985b3c; background: #fff8f3; font-size: 9px; }
 .discussion-empty { padding: 12px; border: 1px dashed #dfe9e2; border-radius: 6px; color: #87958c; text-align: center; font-size: 9px; }
 .discussion-thread { padding: 10px; border: 1px solid #e6eee8; border-radius: 7px; background: #fff; }
