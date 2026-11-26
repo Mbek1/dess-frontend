@@ -103,6 +103,52 @@
             </article>
           </div>
           <div v-else class="restricted-only">No evidence files have been shared with researchers.</div>
+          <section class="repository-discussion-panel">
+            <div class="discussion-heading">
+              <div><p class="section-eyebrow">RESEARCH COMMUNITY</p><h3>Case discussion</h3><small>Share research observations with other Case Repository users. These discussions are separate from private DESS team chats.</small></div>
+              <button class="discussion-refresh" type="button" @click="loadDiscussions(selectedCase._id)" :disabled="discussionsLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+            </div>
+            <div v-if="discussionError" class="discussion-alert">{{ discussionError }}</div>
+            <form class="discussion-composer" @submit.prevent="postDiscussion">
+              <label :for="'discussion-new-' + selectedCase._id">Start a discussion</label>
+              <textarea :id="'discussion-new-' + selectedCase._id" v-model="newDiscussionContent" rows="3" maxlength="5000" placeholder="Share a research question, observation or finding..." required></textarea>
+              <div class="discussion-compose-footer"><small>{{ newDiscussionContent.length }}/5,000</small><button type="submit" :disabled="postingDiscussion || !newDiscussionContent.trim()">{{ postingDiscussion ? 'Posting...' : 'Post discussion' }}</button></div>
+            </form>
+            <div v-if="discussionsLoading" class="discussion-empty">Loading case discussions...</div>
+            <div v-else-if="!discussions.length" class="discussion-empty">No discussions yet. Start the first research conversation for this case.</div>
+            <article v-for="thread in discussions" :key="thread._id" class="discussion-thread" :class="{ 'discussion-pinned': thread.isPinned }">
+              <div class="discussion-author-row">
+                <div class="discussion-author"><span class="discussion-avatar">{{ initials(thread.author?.name) }}</span><span><strong>{{ thread.author?.name || thread.authorName }}</strong><small>{{ thread.author?.userType || 'Researcher' }}<span v-if="thread.author?.organizationName"> · {{ thread.author.organizationName }}</span> · {{ formatDate(thread.createdAt) }}</small></span></div>
+                <span v-if="thread.isPinned" class="discussion-pin-label"><i class="bi bi-pin-angle-fill"></i> Pinned</span>
+              </div>
+              <p class="discussion-content">{{ thread.content }}</p>
+              <div class="discussion-actions">
+                <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
+                <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="removeDiscussion(thread)"><i class="bi bi-trash3"></i> Delete</button>
+                <button v-if="!thread.isMine && !thread.isDeleted" type="button" @click="startCollaborationInvite(thread.author)"><i class="bi bi-people"></i> Request collaboration</button>
+                <button v-if="!thread.isDeleted" type="button" @click="replyingToDiscussionId = replyingToDiscussionId === thread._id ? '' : thread._id"><i class="bi bi-reply"></i> Reply ({{ thread.replies?.length || 0 }})</button>
+              </div>
+              <form v-if="replyingToDiscussionId === thread._id" class="discussion-reply-form" @submit.prevent="postDiscussionReply(thread)">
+                <textarea v-model="discussionReplyContent" rows="2" maxlength="5000" placeholder="Write a reply..." required></textarea>
+                <div><button type="button" class="discussion-cancel" @click="replyingToDiscussionId = ''; discussionReplyContent = ''">Cancel</button><button type="submit" :disabled="postingDiscussion || !discussionReplyContent.trim()">{{ postingDiscussion ? 'Sending...' : 'Send reply' }}</button></div>
+              </form>
+              <div v-if="thread.replies?.length" class="discussion-replies">
+                <article v-for="reply in thread.replies" :key="reply._id" class="discussion-reply">
+                  <div class="discussion-author-row"><div class="discussion-author"><span class="discussion-avatar reply-avatar">{{ initials(reply.author?.name) }}</span><span><strong>{{ reply.author?.name || reply.authorName }}</strong><small>{{ reply.author?.userType || 'Researcher' }} · {{ formatDate(reply.createdAt) }}</small></span></div></div>
+                  <p class="discussion-content">{{ reply.content }}</p>
+                  <div class="discussion-actions">
+                    <button v-if="!reply.isMine && !reply.isDeleted" type="button" @click="startCollaborationInvite(reply.author)"><i class="bi bi-people"></i> Request collaboration</button>
+                    <button v-if="reply.isMine && !reply.isDeleted" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
+                  </div>
+                </article>
+              </div>
+            </article>
+            <div v-if="collaborationTarget" class="collaboration-invite-panel">
+              <div><strong>Invite {{ collaborationTarget.name }} to collaborate</strong><small>This invitation is limited to this research case. It does not grant access to restricted evidence or DESS operational case rooms.</small></div>
+              <textarea v-model="collaborationMessage" rows="2" maxlength="1000" placeholder="Add a short note (optional)..."></textarea>
+              <div><button type="button" class="discussion-cancel" @click="collaborationTarget = null; collaborationMessage = ''">Cancel</button><button type="button" @click="sendCollaborationInvite" :disabled="sendingCollaborationInvite">{{ sendingCollaborationInvite ? 'Sending...' : 'Send invitation' }}</button></div>
+            </div>
+          </section>
           <div v-if="restrictedCount(selectedCase)" class="restricted-summary"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i><span><strong>{{ restrictedCount(selectedCase) }} restricted evidence item(s)</strong><small>These items remain visible to the assigned DESS team and are omitted from this case download.</small></span></div>
         </div>
         <footer class="dialog-footer"><span><i class="bi bi-shield-check" aria-hidden="true"></i> Research access is managed by the assigned DESS team.</span><button class="download-button" type="button" :disabled="downloadingId === selectedCase._id" @click="downloadCase(selectedCase)"><i class="bi bi-download" aria-hidden="true"></i> Download available files</button></footer>
@@ -175,6 +221,16 @@ const error = ref('');
 const downloadingId = ref('');
 const selectedCase = ref<CaseRecord | null>(null);
 const openCaseError = ref<any>(null);
+const discussions = ref<any[]>([]);
+const discussionsLoading = ref(false);
+const discussionError = ref('');
+const newDiscussionContent = ref('');
+const discussionReplyContent = ref('');
+const replyingToDiscussionId = ref('');
+const postingDiscussion = ref(false);
+const collaborationTarget = ref<any>(null);
+const collaborationMessage = ref('');
+const sendingCollaborationInvite = ref(false);
 const showNotifications = ref(false);
 const notifications = ref<NotificationRecord[]>([]);
 const notificationsLoading = ref(false);
@@ -309,9 +365,141 @@ async function saveBookmark(caseItem: CaseRecord, evidence?: EvidenceSummary) {
   }
 }
 
+async function loadDiscussions(caseId: string) {
+  discussionsLoading.value = true;
+  discussionError.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/cases/${caseId}/discussions`, { headers: headers() });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load case discussions');
+    discussions.value = data.discussions || [];
+  } catch (loadError: any) {
+    discussionError.value = loadError?.message || 'Could not load case discussions.';
+  } finally {
+    discussionsLoading.value = false;
+  }
+}
+
+async function postDiscussion() {
+  if (!selectedCase.value || !newDiscussionContent.value.trim()) return;
+  postingDiscussion.value = true;
+  discussionError.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/cases/${selectedCase.value._id}/discussions`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: newDiscussionContent.value.trim() })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not post discussion');
+    newDiscussionContent.value = '';
+    await loadDiscussions(selectedCase.value._id);
+  } catch (postError: any) {
+    discussionError.value = postError?.message || 'Could not post discussion.';
+  } finally {
+    postingDiscussion.value = false;
+  }
+}
+
+async function postDiscussionReply(thread: any) {
+  if (!selectedCase.value || !discussionReplyContent.value.trim()) return;
+  postingDiscussion.value = true;
+  discussionError.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/cases/${selectedCase.value._id}/discussions`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: discussionReplyContent.value.trim(), parentDiscussionId: thread._id })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not post reply');
+    discussionReplyContent.value = '';
+    replyingToDiscussionId.value = '';
+    await loadDiscussions(selectedCase.value._id);
+  } catch (postError: any) {
+    discussionError.value = postError?.message || 'Could not post reply.';
+  } finally {
+    postingDiscussion.value = false;
+  }
+}
+
+async function toggleDiscussionPin(thread: any) {
+  if (!selectedCase.value) return;
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/discussions/${thread._id}/pin`, {
+      method: 'PATCH',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPinned: !thread.isPinned })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not update pin');
+    await loadDiscussions(selectedCase.value._id);
+  } catch (pinError: any) {
+    discussionError.value = pinError?.message || 'Could not update pin.';
+  }
+}
+
+async function removeDiscussion(item: any) {
+  if (!selectedCase.value || !window.confirm('Remove this discussion post? Replies will remain in the thread.')) return;
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/discussions/${item._id}`, {
+      method: 'DELETE',
+      headers: headers()
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not remove discussion');
+    await loadDiscussions(selectedCase.value._id);
+  } catch (removeError: any) {
+    discussionError.value = removeError?.message || 'Could not remove discussion.';
+  }
+}
+
+function startCollaborationInvite(author: any) {
+  if (!author?._id || author._id === sessionUserId()) return;
+  collaborationTarget.value = author;
+  collaborationMessage.value = '';
+}
+
+function sessionUserId() {
+  try {
+    const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+    return String(user.id || user._id || '');
+  } catch {
+    return '';
+  }
+}
+
+async function sendCollaborationInvite() {
+  if (!selectedCase.value || !collaborationTarget.value?._id) return;
+  sendingCollaborationInvite.value = true;
+  discussionError.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-collaboration/cases/${selectedCase.value._id}/collaboration-requests`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientId: collaborationTarget.value._id, message: collaborationMessage.value.trim() })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not send collaboration invitation');
+    collaborationTarget.value = null;
+    collaborationMessage.value = '';
+    discussionError.value = 'Collaboration invitation sent. Track its status in your Research Workspace.';
+  } catch (inviteError: any) {
+    discussionError.value = inviteError?.message || 'Could not send collaboration invitation.';
+  } finally {
+    sendingCollaborationInvite.value = false;
+  }
+}
+
 async function inspectCase(caseItem: CaseRecord) {
   selectedCase.value = caseItem;
+  discussions.value = [];
+  newDiscussionContent.value = '';
+  discussionReplyContent.value = '';
+  replyingToDiscussionId.value = '';
+  collaborationTarget.value = null;
   relatedCases.value = [];
+  void loadDiscussions(caseItem._id);
   relatedLoading.value = true;
   try {
     const response = await fetch(`${API_CONFIG.baseURL}/api/researcher/cases/${caseItem._id}/related`, { headers: headers() });
@@ -436,6 +624,39 @@ onBeforeUnmount(() => {
 .repository-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 15px; padding: 10px; border: 1px solid var(--repo-line); border-radius: 7px; background: rgba(6, 29, 58, .9); }
 .clear-filters-button { display: inline-flex; min-height: 34px; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid #d8e8dd; border-radius: 5px; color: #267452; background: #fff; cursor: pointer; font-size: 9px; font-weight: 650; }
 .clear-filters-button:hover { border-color: #9fd5b4; background: #f1faf5; }
+.repository-discussion-panel { display: grid; gap: 10px; padding: 13px; border: 1px solid #e1eae4; border-radius: 8px; background: #fbfdfb; }
+.discussion-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.discussion-heading h3 { margin: 0; color: #30463a; font-size: 12px; }
+.discussion-heading small { display: block; max-width: 560px; margin-top: 4px; color: #819087; font-size: 8px; line-height: 1.5; }
+.discussion-refresh,.discussion-actions button,.discussion-compose-footer button,.discussion-reply-form button,.collaboration-invite-panel button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid #cfe5d7; border-radius: 5px; color: #267452; background: #fff; cursor: pointer; font-size: 8px; font-weight: 650; }
+.discussion-refresh:disabled,.discussion-compose-footer button:disabled,.discussion-reply-form button:disabled,.collaboration-invite-panel button:disabled { opacity: .5; cursor: wait; }
+.discussion-composer,.discussion-reply-form,.collaboration-invite-panel { display: grid; gap: 7px; padding: 10px; border: 1px solid #e3ece6; border-radius: 7px; background: #fff; }
+.discussion-composer label { color: #3d5647; font-size: 9px; font-weight: 700; }
+.discussion-composer textarea,.discussion-reply-form textarea,.collaboration-invite-panel textarea { width: 100%; padding: 8px; border: 1px solid #dfe9e2; border-radius: 5px; color: #30463a; background: #fbfdfb; font-size: 9px; resize: vertical; }
+.discussion-compose-footer,.discussion-reply-form > div,.collaboration-invite-panel > div:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 7px; }
+.discussion-compose-footer small { margin-right: auto; color: #91a097; font-size: 8px; }
+.discussion-compose-footer button,.collaboration-invite-panel > div:last-child button:last-child { border-color: #18ac78; color: #fff; background: #17ad78; }
+.discussion-alert { padding: 8px 10px; border: 1px solid #f0d6c8; border-radius: 5px; color: #985b3c; background: #fff8f3; font-size: 9px; }
+.discussion-empty { padding: 12px; border: 1px dashed #dfe9e2; border-radius: 6px; color: #87958c; text-align: center; font-size: 9px; }
+.discussion-thread { padding: 10px; border: 1px solid #e6eee8; border-radius: 7px; background: #fff; }
+.discussion-pinned { border-color: #b8dbc6; background: #f8fcf9; }
+.discussion-author-row,.discussion-author { display: flex; align-items: center; gap: 8px; }
+.discussion-author-row { justify-content: space-between; }
+.discussion-author > span:last-child { display: grid; gap: 2px; }
+.discussion-author strong { color: #344a3c; font-size: 9px; }
+.discussion-author small { color: #8a9990; font-size: 8px; }
+.discussion-avatar { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border-radius: 50%; color: #27744f; background: #e6f4eb; font-size: 8px; font-weight: 800; }
+.discussion-pin-label { color: #16865f; font-size: 8px; font-weight: 700; }
+.discussion-content { margin: 9px 0; color: #52685a; font-size: 9px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.discussion-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.discussion-actions button { padding: 4px 7px; font-size: 8px; }
+.discussion-replies { display: grid; gap: 7px; margin: 10px 0 0 15px; padding-left: 12px; border-left: 2px solid #e4eee7; }
+.discussion-reply { padding: 8px; border-radius: 6px; background: #f8fbf9; }
+.reply-avatar { width: 23px; height: 23px; flex-basis: 23px; }
+.discussion-cancel { border-color: #e1e9e3 !important; color: #77877d !important; background: #fff !important; }
+.collaboration-invite-panel { border-color: #cfe5d7; background: #f8fcf9; }
+.collaboration-invite-panel strong,.collaboration-invite-panel small { display: block; color: #385444; font-size: 9px; }
+.collaboration-invite-panel small { margin-top: 4px; color: #829187; font-size: 8px; line-height: 1.5; }
 .related-cases-panel { display: grid; gap: 8px; padding: 12px; border: 1px solid #e1eae4; border-radius: 8px; background: #f8fbf9; }
 .related-cases-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .related-cases-heading h3 { margin: 0; color: #30463a; font-size: 12px; }
