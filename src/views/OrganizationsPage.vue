@@ -6,7 +6,7 @@
     </header>
 
     <section class="directory-tools">
-      <label class="search-box"><i class="bi bi-search"></i><input v-model="search" placeholder="Search organisations, descriptions or locations" @input="loadOrganizations" /></label>
+      <label class="search-box"><i class="bi bi-search"></i><input v-model="search" placeholder="Search organisations, descriptions or locations" @input="scheduleSearch" /></label>
       <select v-model="type" @change="loadOrganizations" aria-label="Filter by organisation type">
         <option value="">All organisation types</option>
         <option value="university">University</option><option value="research-institution">Research institution</option>
@@ -41,12 +41,20 @@
           <span v-else-if="org.membershipStatus === 'pending'" class="pending-state"><i class="bi bi-hourglass-split"></i> Request pending</span>
           <span v-else-if="org.membershipStatus === 'rejected'" class="pending-state">Request declined</span>
           <button v-else class="join-button" :disabled="joining === org._id" @click="joinOrganization(org)">{{ joining === org._id ? 'Requesting…' : 'Request to join' }}</button>
+          <button class="manage-button" @click="viewProfile(org)">View profile</button>
           <button v-if="org.canManage" class="manage-button" @click="openMembers(org)">Manage members</button>
           <button v-if="org.canVerify && org.verificationStatus !== 'verified'" class="manage-button" @click="verifyOrganization(org, 'verified')">Verify organisation</button>
           <button v-if="org.canVerify && org.verificationStatus !== 'rejected'" class="manage-button danger" @click="verifyOrganization(org, 'rejected')">Reject</button>
         </div>
       </article>
       <div v-if="!organizations.length" class="empty-state"><i class="bi bi-building"></i><h3>No organisations found</h3><p>Try a different search or submit the organisation if it is missing.</p></div>
+    </section>
+
+    <section v-if="selectedProfile" class="members-panel">
+      <div class="panel-title"><div><h2>{{ selectedProfile.organization.name }}</h2><p>{{ typeLabel(selectedProfile.organization.type) }} · {{ selectedProfile.organization.location || 'Location not provided' }} · {{ selectedProfile.organization.verificationStatus }}</p></div><button class="icon-button" @click="selectedProfile = null" aria-label="Close"><i class="bi bi-x-lg"></i></button></div>
+      <p class="profile-description">{{ selectedProfile.organization.description || 'No organisation description has been provided.' }}</p>
+      <h3 class="member-heading">Associated members ({{ selectedProfile.members.length }})</h3>
+      <div class="member-directory"><div v-for="(member, index) in selectedProfile.members" :key="index" class="member-chip"><i class="bi bi-person-circle"></i><span><strong>{{ member.name }}</strong><small>{{ member.userType }}</small></span></div></div>
     </section>
 
     <section v-if="selectedOrganization" class="members-panel">
@@ -62,7 +70,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import axios from 'axios';
 
 interface Organization {
@@ -70,13 +78,16 @@ interface Organization {
   verificationStatus: string; memberCount: number; membershipStatus: string; canManage: boolean; canVerify: boolean;
 }
 interface Member { membershipId: string; user: { name: string; email: string }; userType: string; status: string; }
+interface OrganizationProfile { organization: Organization; members: Array<{ name: string; userType: string }>; }
 const organizations = ref<Organization[]>([]);
 const loading = ref(false); const creating = ref(false); const joining = ref('');
 const showCreate = ref(false); const search = ref(''); const type = ref('');
 const notice = ref(''); const error = ref(''); const formError = ref(''); const membersError = ref('');
 const selectedOrganization = ref<Organization | null>(null); const members = ref<Member[]>([]);
+const selectedProfile = ref<OrganizationProfile | null>(null);
 const form = ref({ name: '', type: 'university', description: '', website: '', location: '' });
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleSearch() { if (searchTimer) clearTimeout(searchTimer); searchTimer = setTimeout(() => void loadOrganizations(), 250); }
 const token = () => sessionStorage.getItem('dess_token') || '';
 const config = () => ({ headers: { Authorization: `Bearer ${token()}` }, withCredentials: true });
 
@@ -108,6 +119,10 @@ async function joinOrganization(org: Organization) {
   } catch (err: any) { notice.value = err?.response?.data?.error || 'Could not submit membership request.'; }
   finally { joining.value = ''; }
 }
+async function viewProfile(org: Organization) {
+  try { const response = await axios.get(`/api/organizations/${org._id}`, config()); selectedProfile.value = response.data; }
+  catch (err: any) { error.value = err?.response?.data?.error || 'Could not load organisation profile.'; }
+}
 async function openMembers(org: Organization) {
   selectedOrganization.value = org; membersError.value = ''; members.value = [];
   try { const response = await axios.get(`/api/organizations/${org._id}/members`, config()); members.value = response.data.members || []; }
@@ -127,6 +142,7 @@ async function reviewMember(member: Member, status: 'approved' | 'rejected') {
   } catch (err: any) { membersError.value = err?.response?.data?.error || 'Could not update membership.'; }
 }
 onMounted(loadOrganizations);
+onUnmounted(() => { if (searchTimer) clearTimeout(searchTimer); });
 </script>
 
 <style scoped>
@@ -136,6 +152,6 @@ onMounted(loadOrganizations);
 .directory-tools,.create-panel,.organization-grid,.members-panel,.notice,.loading{max-width:1450px;margin-left:auto;margin-right:auto}.directory-tools{display:flex;gap:10px;margin-bottom:18px}.search-box{display:flex;flex:1;align-items:center;gap:10px;padding:0 12px;border:1px solid #17436d;border-radius:7px;background:#061d3a}.search-box input{width:100%;min-height:42px;border:0;outline:0;color:#eaf4ff;background:transparent;font-size:12px}.directory-tools select,.create-grid input,.create-grid select,.create-grid textarea{min-height:42px;padding:9px 11px;border:1px solid #17436d;border-radius:7px;color:#eaf4ff;background:#061d3a;font-size:12px}.directory-tools select{min-width:205px}
 .create-panel,.members-panel{margin-bottom:18px;padding:18px;border:1px solid #17436d;border-radius:10px;background:#061d3a}.panel-title{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:15px}.panel-title h2{margin:0;font-size:16px}.panel-title p{margin:5px 0 0;color:#9eb8d4;font-size:11px}.icon-button{width:30px;height:30px;border:1px solid #234b70;border-radius:6px;color:#c9def3;background:transparent;cursor:pointer}
 .create-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.create-grid label{display:grid;gap:6px;color:#b8cce1;font-size:11px;font-weight:650}.create-grid .wide{grid-column:1/-1}.create-grid textarea{resize:vertical}.form-footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.organization-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:13px}.organization-card{display:flex;min-width:0;flex-direction:column;padding:16px;border:1px solid #17436d;border-radius:10px;background:linear-gradient(145deg,#082345,#061a34);box-shadow:0 10px 25px #00102044}.card-top{display:flex;align-items:center;justify-content:space-between}.org-icon{display:grid;width:38px;height:38px;place-items:center;border-radius:9px;color:#57d8b1;background:#0b493f;font-size:18px}.verification{padding:5px 8px;border-radius:20px;font-size:9px;font-weight:700}.verification.verified{color:#77edc8;background:#075342}.verification.pending{color:#ffd28a;background:#594018}.organization-card h2{margin:13px 0 4px;font-size:15px}.org-type{margin:0;color:#72b8f0;font-size:10px}.description{min-height:45px;margin:11px 0;color:#a9bfd6;font-size:11px;line-height:1.55}.card-meta{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #163b5f;color:#9eb5cd;font-size:10px}.card-meta a{color:#65b5ff;text-decoration:none}.card-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:10px}.member-state,.pending-state{font-size:10px;color:#6fe2b9}.pending-state{color:#f6c77b}.manage-button,.member-actions button{padding:7px 9px;border:1px solid #2b638e;border-radius:6px;color:#b9dcf8;background:transparent;font-size:10px;cursor:pointer}.empty-state{grid-column:1/-1;padding:50px 20px;text-align:center;color:#a8bfd5}.empty-state>i{font-size:30px;color:#4a9cce}.empty-state h3{margin:12px 0 5px;color:#e7f2ff;font-size:16px}.empty-state p{font-size:11px}.notice{margin-top:12px;margin-bottom:12px;padding:10px 12px;border:1px solid #1d604f;border-radius:7px;color:#8de5c4;background:#063b32;font-size:11px}.error{color:#ffaaa9;font-size:11px}.loading{padding:35px;text-align:center;color:#a9bfd6}.members-panel{margin-top:18px}.member-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #163b5f}.member-row>div:first-child{display:grid;gap:4px}.member-row strong{font-size:11px}.member-row small,.empty-members{color:#9db6ce;font-size:10px}.member-actions{display:flex;gap:6px}.member-actions .decline,.manage-button.danger{border-color:#74414b;color:#ffb4b4}.empty-members{margin:12px 0}
+.organization-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:13px}.organization-card{display:flex;min-width:0;flex-direction:column;padding:16px;border:1px solid #17436d;border-radius:10px;background:linear-gradient(145deg,#082345,#061a34);box-shadow:0 10px 25px #00102044}.card-top{display:flex;align-items:center;justify-content:space-between}.org-icon{display:grid;width:38px;height:38px;place-items:center;border-radius:9px;color:#57d8b1;background:#0b493f;font-size:18px}.verification{padding:5px 8px;border-radius:20px;font-size:9px;font-weight:700}.verification.verified{color:#77edc8;background:#075342}.verification.pending{color:#ffd28a;background:#594018}.organization-card h2{margin:13px 0 4px;font-size:15px}.org-type{margin:0;color:#72b8f0;font-size:10px}.description{min-height:45px;margin:11px 0;color:#a9bfd6;font-size:11px;line-height:1.55}.card-meta{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid #163b5f;color:#9eb5cd;font-size:10px}.card-meta a{color:#65b5ff;text-decoration:none}.card-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:10px}.member-state,.pending-state{font-size:10px;color:#6fe2b9}.pending-state{color:#f6c77b}.manage-button,.member-actions button{padding:7px 9px;border:1px solid #2b638e;border-radius:6px;color:#b9dcf8;background:transparent;font-size:10px;cursor:pointer}.empty-state{grid-column:1/-1;padding:50px 20px;text-align:center;color:#a8bfd5}.empty-state>i{font-size:30px;color:#4a9cce}.empty-state h3{margin:12px 0 5px;color:#e7f2ff;font-size:16px}.empty-state p{font-size:11px}.notice{margin-top:12px;margin-bottom:12px;padding:10px 12px;border:1px solid #1d604f;border-radius:7px;color:#8de5c4;background:#063b32;font-size:11px}.error{color:#ffaaa9;font-size:11px}.loading{padding:35px;text-align:center;color:#a9bfd6}.members-panel{margin-top:18px}.profile-description{color:#b4c9de;font-size:12px;line-height:1.6}.member-heading{margin:14px 0 9px;color:#dcecff;font-size:12px}.member-directory{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}.member-chip{display:flex;align-items:center;gap:9px;padding:9px;border:1px solid #173f64;border-radius:7px;background:#08213e}.member-chip>i{color:#5bc8a6;font-size:19px}.member-chip span{display:grid;gap:3px}.member-chip strong{color:#dcecff;font-size:10px}.member-chip small{color:#9db6ce;font-size:9px}.member-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #163b5f}.member-row>div:first-child{display:grid;gap:4px}.member-row strong{font-size:11px}.member-row small,.empty-members{color:#9db6ce;font-size:10px}.member-actions{display:flex;gap:6px}.member-actions .decline,.manage-button.danger{border-color:#74414b;color:#ffb4b4}.empty-members{margin:12px 0}
 @media(max-width:680px){.page-header{align-items:flex-start;flex-direction:column}.directory-tools{flex-direction:column}.directory-tools select{width:100%}.create-grid{grid-template-columns:1fr}.create-grid .wide{grid-column:auto}.form-footer{align-items:flex-start;flex-direction:column}.member-row{align-items:flex-start;flex-direction:column}}
 </style>
