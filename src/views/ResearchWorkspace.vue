@@ -57,7 +57,7 @@
       <div v-if="!workspace.bookmarks.length" class="empty-state">No bookmarks yet. Browse the Case Repository and use Save on a case or shared evidence item.</div>
       <article v-for="item in workspace.bookmarks" :key="item._id" class="saved-row">
         <div><span class="case-reference">{{ item.caseReference }}</span><h3>{{ item.caseTitle }}</h3><p v-if="item.evidenceName">Evidence: {{ item.evidenceName }}</p><small>Saved {{ formatDate(item.createdAt) }}</small></div>
-        <div class="saved-actions"><router-link :to="/researcher" class="btn btn-sm btn-outline-primary">Open repository</router-link><button class="btn btn-sm btn-outline-danger" @click="removeBookmark(item)">Remove</button></div>
+        <div class="saved-actions"><router-link to="/researcher" class="btn btn-sm btn-outline-primary">Open repository</router-link><button class="btn btn-sm btn-outline-danger" @click="removeBookmark(item)">Remove</button></div>
       </article>
     </section>
 
