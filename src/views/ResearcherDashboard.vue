@@ -77,82 +77,165 @@
       </nav>
     </section>
 
-    <div v-if="selectedCase" class="dialog-backdrop" @click.self="selectedCase = null">
-      <section class="case-dialog" role="dialog" aria-modal="true" :aria-labelledby="`case-title-${selectedCase._id}`">
-        <header class="dialog-header"><div><p class="section-eyebrow">CASE RECORD</p><h2 :id="`case-title-${selectedCase._id}`">{{ selectedCase.caseId || `Case ${selectedCase.number}` }}</h2><p>{{ selectedCase.name }}</p></div><button class="icon-button" type="button" aria-label="Close case details" @click="selectedCase = null"><i class="bi bi-x-lg" aria-hidden="true"></i></button></header>
-        <div class="dialog-content">
-          <div class="case-description"><span>Case description</span><p>{{ selectedCase.description || 'No description provided.' }}</p></div>
-          <section class="related-cases-panel" aria-labelledby="related-cases-heading">
-            <div class="related-cases-heading"><div><p class="section-eyebrow">DISCOVER MORE</p><h3 id="related-cases-heading">Related cases</h3></div><span v-if="relatedCases.length">{{ relatedCases.length }} suggestions</span></div>
-            <div v-if="relatedLoading" class="related-state">Finding similar cases...</div>
-            <div v-else-if="relatedCases.length" class="related-case-list">
-              <button v-for="related in relatedCases" :key="related._id" class="related-case-row" type="button" @click="inspectCase(related)">
-                <span class="related-case-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
-                <span class="related-case-copy"><strong>{{ related.caseId || related.name }}</strong><small>{{ related.name }} · {{ capitalizeCase(related.caseType) }}</small><small>{{ related.relevanceReasons?.join(' · ') }}</small></span>
-                <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+
+    <div v-if="selectedCase" class="dialog-backdrop" @click.self="selectedCase = null" @keydown.esc="selectedCase = null">
+      <section class="case-dialog case-dialog-redesigned" role="dialog" aria-modal="true" :aria-labelledby="`case-title-${selectedCase._id}`">
+        <header class="case-modal-header">
+          <div class="case-modal-heading">
+            <div class="case-modal-icon"><i class="bi bi-folder2-open" aria-hidden="true"></i></div>
+            <div class="case-modal-title">
+              <div class="case-modal-kickers">
+                <span class="case-modal-eyebrow">CASE REPOSITORY</span>
+                <span class="case-modal-status"><i class="bi bi-check-circle-fill"></i> Closed case</span>
+              </div>
+              <h2 :id="`case-title-${selectedCase._id}`">{{ selectedCase.name }}</h2>
+              <p>{{ selectedCase.caseId || `Case ${selectedCase.number}` }}</p>
+            </div>
+          </div>
+          <button class="case-modal-close" type="button" aria-label="Close case details" @click="selectedCase = null"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+        </header>
+
+        <div class="case-modal-summary">
+          <span><i class="bi bi-diagram-3"></i>{{ capitalizeCase(selectedCase.caseType) }} case</span>
+          <span><i class="bi bi-calendar3"></i>Archived {{ formatDate(selectedCase.updatedAt || selectedCase.createdAt) }}</span>
+          <span><i class="bi bi-file-earmark-check"></i>{{ sharedEvidence(selectedCase).length }} shared evidence items</span>
+          <span><i class="bi bi-chat-square-text"></i>{{ discussions.length }} discussions</span>
+        </div>
+
+        <nav class="case-detail-tabs" role="tablist" aria-label="Case details sections">
+          <button type="button" role="tab" :aria-selected="activeCaseTab === 'overview'" :class="{ active: activeCaseTab === 'overview' }" @click="activeCaseTab = 'overview'">
+            <i class="bi bi-info-circle"></i><span>Overview</span>
+          </button>
+          <button type="button" role="tab" :aria-selected="activeCaseTab === 'evidence'" :class="{ active: activeCaseTab === 'evidence' }" @click="activeCaseTab = 'evidence'">
+            <i class="bi bi-file-earmark-lock"></i><span>Evidence</span><small>{{ selectedCase.evidence.length }}</small>
+          </button>
+          <button type="button" role="tab" :aria-selected="activeCaseTab === 'related'" :class="{ active: activeCaseTab === 'related' }" @click="activeCaseTab = 'related'">
+            <i class="bi bi-diagram-2"></i><span>Related cases</span><small>{{ relatedLoading ? '…' : relatedCases.length }}</small>
+          </button>
+          <button type="button" role="tab" :aria-selected="activeCaseTab === 'discussion'" :class="{ active: activeCaseTab === 'discussion' }" @click="activeCaseTab = 'discussion'">
+            <i class="bi bi-chat-square-text"></i><span>Discussion</span><small>{{ discussions.length }}</small>
+          </button>
+        </nav>
+
+        <div class="case-modal-body">
+          <section v-if="activeCaseTab === 'overview'" class="case-tab-panel" role="tabpanel">
+            <div class="case-overview-layout">
+              <article class="case-info-card case-description-card">
+                <div class="case-section-heading"><div><span class="case-section-eyebrow">CASE SUMMARY</span><h3>About this case</h3></div><span class="case-type-pill">{{ capitalizeCase(selectedCase.caseType) }}</span></div>
+                <p>{{ selectedCase.description || 'No case description has been provided.' }}</p>
+              </article>
+              <aside class="case-overview-side">
+                <div class="case-info-card access-card">
+                  <span class="case-section-eyebrow">RESEARCH ACCESS</span>
+                  <div class="access-card-status"><i class="bi bi-shield-check"></i><div><strong>Closed archive record</strong><small>Researcher access is limited to material shared by the case team.</small></div></div>
+                  <div class="access-card-counts">
+                    <div><strong>{{ sharedEvidence(selectedCase).length }}</strong><span>Available</span></div>
+                    <div><strong>{{ restrictedCount(selectedCase) }}</strong><span>Restricted</span></div>
+                  </div>
+                </div>
+                <div class="case-info-card case-actions-card">
+                  <span class="case-section-eyebrow">QUICK ACTIONS</span>
+                  <button type="button" @click="activeCaseTab = 'evidence'"><i class="bi bi-file-earmark-check"></i> Review shared evidence</button>
+                  <button type="button" @click="activeCaseTab = 'related'"><i class="bi bi-diagram-3"></i> Explore related cases</button>
+                  <button type="button" @click="activeCaseTab = 'discussion'"><i class="bi bi-chat-square-text"></i> Join case discussion</button>
+                </div>
+              </aside>
+            </div>
+            <div v-if="restrictedCount(selectedCase)" class="restricted-summary">
+              <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+              <span><strong>{{ restrictedCount(selectedCase) }} evidence item(s) are restricted</strong><small>These items remain visible to the assigned DESS team. Their names, contents and files are not exposed in the Case Repository.</small></span>
+            </div>
+          </section>
+
+          <section v-else-if="activeCaseTab === 'evidence'" class="case-tab-panel" role="tabpanel">
+            <div class="case-section-heading case-tab-intro"><div><span class="case-section-eyebrow">RESEARCHER-APPROVED MATERIAL</span><h3>Evidence available for review</h3><p>Only evidence explicitly shared by the case team is listed here.</p></div><span class="case-tab-count">{{ sharedEvidence(selectedCase).length }} available</span></div>
+            <div v-if="sharedEvidence(selectedCase).length" class="case-evidence-grid">
+              <article v-for="evidence in sharedEvidence(selectedCase)" :key="evidence._id" class="case-evidence-card">
+                <div class="case-evidence-icon"><i class="bi bi-file-earmark-check"></i></div>
+                <div class="case-evidence-main">
+                  <strong>{{ evidence.name }}</strong>
+                  <p>{{ evidence.description || 'No evidence description provided.' }}</p>
+                  <div class="case-evidence-meta"><span>{{ evidence.type || 'Unclassified' }}</span><span>{{ evidence.format || 'File' }}</span><span v-if="evidence.uploadedAt">{{ formatDate(evidence.uploadedAt) }}</span></div>
+                  <code v-if="evidence.hash">SHA-256 · {{ evidence.hash }}</code>
+                </div>
+                <button class="evidence-save-button" type="button" @click="saveBookmark(selectedCase, evidence)" title="Save evidence to your Research Workspace"><i class="bi bi-bookmark-plus"></i><span>Save</span></button>
+              </article>
+            </div>
+            <div v-else class="case-tab-empty"><i class="bi bi-file-earmark-lock"></i><strong>No shared evidence yet</strong><span>The case team has not made any evidence items available to researchers.</span></div>
+            <div v-if="restrictedCount(selectedCase)" class="restricted-summary">
+              <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
+              <span><strong>{{ restrictedCount(selectedCase) }} restricted evidence item(s)</strong><small>Restricted evidence is deliberately excluded from this list and from researcher downloads.</small></span>
+            </div>
+          </section>
+
+          <section v-else-if="activeCaseTab === 'related'" class="case-tab-panel" role="tabpanel">
+            <div class="case-section-heading case-tab-intro"><div><span class="case-section-eyebrow">DISCOVERY</span><h3>Related cases</h3><p>Other closed cases with overlapping topics, classifications or shared evidence types.</p></div><button class="case-subtle-button" type="button" @click="inspectCase(selectedCase)" :disabled="relatedLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div>
+            <div v-if="relatedLoading" class="case-tab-empty"><span class="spinner-border spinner-border-sm"></span><strong>Finding related cases</strong><span>Comparing case descriptions, keywords and researcher-visible evidence types.</span></div>
+            <div v-else-if="relatedCases.length" class="related-case-grid">
+              <button v-for="related in relatedCases" :key="related._id" class="related-case-card" type="button" @click="inspectCase(related)">
+                <span class="related-case-card-icon"><i class="bi bi-folder2-open"></i></span>
+                <span class="related-case-card-copy"><strong>{{ related.caseId || related.name }}</strong><b>{{ related.name }}</b><small>{{ capitalizeCase(related.caseType) }} · {{ related.relevanceReasons?.join(' · ') }}</small></span>
+                <i class="bi bi-arrow-up-right related-case-open"></i>
               </button>
             </div>
-            <p v-else class="related-state">No sufficiently similar cases were found in the accessible archive.</p>
+            <div v-else class="case-tab-empty"><i class="bi bi-diagram-2"></i><strong>No related cases found</strong><span>There are no sufficiently similar cases in the accessible archive.</span></div>
           </section>
-          <div class="evidence-heading"><div><p class="section-eyebrow">EVIDENCE ACCESS</p><h3>{{ selectedCase.evidence.length }} items in case</h3></div><span class="access-legend"><i class="bi bi-unlock" aria-hidden="true"></i> Researcher approved</span></div>
-          <div v-if="sharedEvidence(selectedCase).length" class="shared-evidence-list">
-            <article v-for="evidence in sharedEvidence(selectedCase)" :key="evidence._id" class="shared-evidence-row">
-              <span class="evidence-file-icon"><i class="bi bi-file-earmark-check" aria-hidden="true"></i></span>
-              <span class="shared-evidence-copy"><strong>{{ evidence.name }}</strong><small>{{ evidence.type }} · {{ evidence.format }} · {{ evidence.description }}</small><code v-if="evidence.hash">SHA-256 {{ evidence.hash }}</code></span>
-              <button class="evidence-save-button" type="button" @click="saveBookmark(selectedCase, evidence)"><i class="bi bi-bookmark-plus" aria-hidden="true"></i> Save</button><span class="available-label">Available in archive</span>
-            </article>
-          </div>
-          <div v-else class="restricted-only">No evidence files have been shared with researchers.</div>
-          <section class="repository-discussion-panel">
-            <div class="discussion-heading">
-              <div><p class="section-eyebrow">RESEARCH COMMUNITY</p><h3>Case discussion</h3><small>Share research observations with other Case Repository users. These discussions are separate from private DESS team chats.</small></div>
-              <button class="discussion-refresh" type="button" @click="loadDiscussions(selectedCase._id)" :disabled="discussionsLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
-            </div>
-            <div v-if="discussionError" class="discussion-alert">{{ discussionError }}</div>
-            <div v-if="discussionNotice" class="discussion-notice">{{ discussionNotice }}</div>
-            <form class="discussion-composer" @submit.prevent="postDiscussion">
-              <label :for="'discussion-new-' + selectedCase._id">Start a discussion</label>
-              <textarea :id="'discussion-new-' + selectedCase._id" v-model="newDiscussionContent" rows="3" maxlength="5000" placeholder="Share a research question, observation or finding..." required></textarea>
-              <div class="discussion-compose-footer"><small>{{ newDiscussionContent.length }}/5,000</small><button type="submit" :disabled="postingDiscussion || !newDiscussionContent.trim()">{{ postingDiscussion ? 'Posting...' : 'Post discussion' }}</button></div>
-            </form>
-            <div v-if="discussionsLoading" class="discussion-empty">Loading case discussions...</div>
-            <div v-else-if="!discussions.length" class="discussion-empty">No discussions yet. Start the first research conversation for this case.</div>
-            <article v-for="thread in discussions" :key="thread._id" class="discussion-thread" :class="{ 'discussion-pinned': thread.isPinned }">
-              <div class="discussion-author-row">
-                <div class="discussion-author"><span class="discussion-avatar">{{ initials(thread.author?.name) }}</span><span><strong>{{ thread.author?.name || thread.authorName }}</strong><small>{{ thread.author?.userType || 'Researcher' }}<span v-if="thread.author?.organizationName"> · {{ thread.author.organizationName }}</span> · {{ formatDate(thread.createdAt) }}</small></span></div>
-                <span v-if="thread.isPinned" class="discussion-pin-label"><i class="bi bi-pin-angle-fill"></i> Pinned</span>
+
+          <section v-else class="case-tab-panel case-discussion-tab" role="tabpanel">
+            <section class="repository-discussion-panel">
+              <div class="discussion-heading">
+                <div><span class="case-section-eyebrow">RESEARCH COMMUNITY</span><h3>Case discussion</h3><small>Share research questions, observations and findings. These discussions are separate from private DESS team chats.</small></div>
+                <button class="discussion-refresh" type="button" @click="loadDiscussions(selectedCase._id)" :disabled="discussionsLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
               </div>
-              <p class="discussion-content">{{ thread.content }}</p>
-              <div class="discussion-actions">
-                <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
-                <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="removeDiscussion(thread)"><i class="bi bi-trash3"></i> Delete</button>
-                <button v-if="!thread.isMine && !thread.isDeleted" type="button" @click="startCollaborationInvite(thread.author)"><i class="bi bi-people"></i> Request collaboration</button>
-                <button v-if="!thread.isDeleted" type="button" @click="replyingToDiscussionId = replyingToDiscussionId === thread._id ? '' : thread._id"><i class="bi bi-reply"></i> Reply ({{ thread.replies?.length || 0 }})</button>
-              </div>
-              <form v-if="replyingToDiscussionId === thread._id" class="discussion-reply-form" @submit.prevent="postDiscussionReply(thread)">
-                <textarea v-model="discussionReplyContent" rows="2" maxlength="5000" placeholder="Write a reply..." required></textarea>
-                <div><button type="button" class="discussion-cancel" @click="replyingToDiscussionId = ''; discussionReplyContent = ''">Cancel</button><button type="submit" :disabled="postingDiscussion || !discussionReplyContent.trim()">{{ postingDiscussion ? 'Sending...' : 'Send reply' }}</button></div>
+              <div v-if="discussionError" class="discussion-alert">{{ discussionError }}</div>
+              <div v-if="discussionNotice" class="discussion-notice">{{ discussionNotice }}</div>
+              <form class="discussion-composer" @submit.prevent="postDiscussion">
+                <label :for="'discussion-new-' + selectedCase._id">Start a discussion</label>
+                <textarea :id="'discussion-new-' + selectedCase._id" v-model="newDiscussionContent" rows="3" maxlength="5000" placeholder="Share a research question, observation or finding..." required></textarea>
+                <div class="discussion-compose-footer"><small>{{ newDiscussionContent.length }}/5,000</small><button type="submit" :disabled="postingDiscussion || !newDiscussionContent.trim()">{{ postingDiscussion ? 'Posting...' : 'Post discussion' }}</button></div>
               </form>
-              <div v-if="thread.replies?.length" class="discussion-replies">
-                <article v-for="reply in thread.replies" :key="reply._id" class="discussion-reply">
-                  <div class="discussion-author-row"><div class="discussion-author"><span class="discussion-avatar reply-avatar">{{ initials(reply.author?.name) }}</span><span><strong>{{ reply.author?.name || reply.authorName }}</strong><small>{{ reply.author?.userType || 'Researcher' }} · {{ formatDate(reply.createdAt) }}</small></span></div></div>
-                  <p class="discussion-content">{{ reply.content }}</p>
-                  <div class="discussion-actions">
-                    <button v-if="!reply.isMine && !reply.isDeleted" type="button" @click="startCollaborationInvite(reply.author)"><i class="bi bi-people"></i> Request collaboration</button>
-                    <button v-if="reply.isMine && !reply.isDeleted" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
-                  </div>
-                </article>
+              <div v-if="discussionsLoading" class="discussion-empty">Loading case discussions...</div>
+              <div v-else-if="!discussions.length" class="discussion-empty">No discussions yet. Start the first research conversation for this case.</div>
+              <article v-for="thread in discussions" :key="thread._id" class="discussion-thread" :class="{ 'discussion-pinned': thread.isPinned }">
+                <div class="discussion-author-row">
+                  <div class="discussion-author"><span class="discussion-avatar">{{ initials(thread.author?.name) }}</span><span><strong>{{ thread.author?.name || thread.authorName }}</strong><small>{{ thread.author?.userType || 'Researcher' }}<span v-if="thread.author?.organizationName"> · {{ thread.author.organizationName }}</span> · {{ formatDate(thread.createdAt) }}</small></span></div>
+                  <span v-if="thread.isPinned" class="discussion-pin-label"><i class="bi bi-pin-angle-fill"></i> Pinned</span>
+                </div>
+                <p class="discussion-content">{{ thread.content }}</p>
+                <div class="discussion-actions">
+                  <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
+                  <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="removeDiscussion(thread)"><i class="bi bi-trash3"></i> Delete</button>
+                  <button v-if="!thread.isMine && !thread.isDeleted" type="button" @click="startCollaborationInvite(thread.author)"><i class="bi bi-people"></i> Request collaboration</button>
+                  <button v-if="!thread.isDeleted" type="button" @click="replyingToDiscussionId = replyingToDiscussionId === thread._id ? '' : thread._id"><i class="bi bi-reply"></i> Reply ({{ thread.replies?.length || 0 }})</button>
+                </div>
+                <form v-if="replyingToDiscussionId === thread._id" class="discussion-reply-form" @submit.prevent="postDiscussionReply(thread)">
+                  <textarea v-model="discussionReplyContent" rows="2" maxlength="5000" placeholder="Write a reply..." required></textarea>
+                  <div><button type="button" class="discussion-cancel" @click="replyingToDiscussionId = ''; discussionReplyContent = ''">Cancel</button><button type="submit" :disabled="postingDiscussion || !discussionReplyContent.trim()">{{ postingDiscussion ? 'Sending...' : 'Send reply' }}</button></div>
+                </form>
+                <div v-if="thread.replies?.length" class="discussion-replies">
+                  <article v-for="reply in thread.replies" :key="reply._id" class="discussion-reply">
+                    <div class="discussion-author-row"><div class="discussion-author"><span class="discussion-avatar reply-avatar">{{ initials(reply.author?.name) }}</span><span><strong>{{ reply.author?.name || reply.authorName }}</strong><small>{{ reply.author?.userType || 'Researcher' }} · {{ formatDate(reply.createdAt) }}</small></span></div></div>
+                    <p class="discussion-content">{{ reply.content }}</p>
+                    <div class="discussion-actions">
+                      <button v-if="!reply.isMine && !reply.isDeleted" type="button" @click="startCollaborationInvite(reply.author)"><i class="bi bi-people"></i> Request collaboration</button>
+                      <button v-if="reply.isMine && !reply.isDeleted" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
+                    </div>
+                  </article>
+                </div>
+              </article>
+              <div v-if="collaborationTarget" class="collaboration-invite-panel">
+                <div><strong>Invite {{ collaborationTarget.name }} to collaborate</strong><small>This invitation is limited to this research case. It does not grant access to restricted evidence or DESS operational case rooms.</small></div>
+                <textarea v-model="collaborationMessage" rows="2" maxlength="1000" placeholder="Add a short note (optional)..."></textarea>
+                <div><button type="button" class="discussion-cancel" @click="collaborationTarget = null; collaborationMessage = ''">Cancel</button><button type="button" @click="sendCollaborationInvite" :disabled="sendingCollaborationInvite">{{ sendingCollaborationInvite ? 'Sending...' : 'Send invitation' }}</button></div>
               </div>
-            </article>
-            <div v-if="collaborationTarget" class="collaboration-invite-panel">
-              <div><strong>Invite {{ collaborationTarget.name }} to collaborate</strong><small>This invitation is limited to this research case. It does not grant access to restricted evidence or DESS operational case rooms.</small></div>
-              <textarea v-model="collaborationMessage" rows="2" maxlength="1000" placeholder="Add a short note (optional)..."></textarea>
-              <div><button type="button" class="discussion-cancel" @click="collaborationTarget = null; collaborationMessage = ''">Cancel</button><button type="button" @click="sendCollaborationInvite" :disabled="sendingCollaborationInvite">{{ sendingCollaborationInvite ? 'Sending...' : 'Send invitation' }}</button></div>
-            </div>
+            </section>
           </section>
-          <div v-if="restrictedCount(selectedCase)" class="restricted-summary"><i class="bi bi-shield-lock-fill" aria-hidden="true"></i><span><strong>{{ restrictedCount(selectedCase) }} restricted evidence item(s)</strong><small>These items remain visible to the assigned DESS team and are omitted from this case download.</small></span></div>
         </div>
-        <footer class="dialog-footer"><span><i class="bi bi-shield-check" aria-hidden="true"></i> Research access is managed by the assigned DESS team.</span><button class="download-button" type="button" :disabled="downloadingId === selectedCase._id" @click="downloadCase(selectedCase)"><i class="bi bi-download" aria-hidden="true"></i> Download available files</button></footer>
+
+        <footer class="case-modal-footer">
+          <span><i class="bi bi-shield-check"></i> Only researcher-approved evidence is available here.</span>
+          <div><button class="case-footer-close" type="button" @click="selectedCase = null">Close</button><button class="download-button" type="button" :disabled="downloadingId === selectedCase._id" @click="downloadCase(selectedCase)"><i class="bi bi-download" aria-hidden="true"></i>{{ downloadingId === selectedCase._id ? 'Preparing…' : 'Download available evidence' }}</button></div>
+        </footer>
       </section>
     </div>
 
@@ -221,6 +304,7 @@ const loading = ref(false);
 const error = ref('');
 const downloadingId = ref('');
 const selectedCase = ref<CaseRecord | null>(null);
+const activeCaseTab = ref<'overview' | 'evidence' | 'related' | 'discussion'>('overview');
 const openCaseError = ref<any>(null);
 const discussions = ref<any[]>([]);
 const discussionsLoading = ref(false);
@@ -498,6 +582,7 @@ async function sendCollaborationInvite() {
 
 async function inspectCase(caseItem: CaseRecord) {
   selectedCase.value = caseItem;
+  activeCaseTab.value = 'overview';
   discussionError.value = '';
   discussionNotice.value = '';
   discussions.value = [];
@@ -839,6 +924,141 @@ onBeforeUnmount(() => {
   .repository-pagination { align-items: flex-start; flex-direction: column; }
   .pagination-actions { width: 100%; justify-content: space-between; }
   .stat-item { border-color: #edf2ee !important; }
+}
+
+
+/* Structured case detail window */
+.case-dialog-redesigned {
+  width: min(960px, 100%);
+  max-height: min(92vh, 920px);
+  border: 1px solid #dce9df;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 28px 90px rgba(15, 47, 30, .24);
+}
+.case-modal-header {
+  display:flex; align-items:flex-start; justify-content:space-between; gap:18px;
+  padding:20px 24px 17px; border-bottom:1px solid #edf2ee; background:#fff;
+}
+.case-modal-heading { display:flex; min-width:0; align-items:center; gap:14px; }
+.case-modal-icon { display:grid; width:48px; height:48px; flex:0 0 48px; place-items:center; border:1px solid #d9ece0; border-radius:13px; color:#17845d; background:#eff8f2; font-size:21px; }
+.case-modal-title { min-width:0; }
+.case-modal-kickers { display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-bottom:5px; }
+.case-modal-eyebrow,.case-section-eyebrow { color:#168b64; font-size:9px; font-weight:800; letter-spacing:.12em; }
+.case-modal-status { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:20px; color:#1d8158; background:#edf8f1; font-size:8px; font-weight:750; }
+.case-modal-title h2 { margin:0; color:#20392b; font-size:clamp(17px,2.3vw,22px); font-weight:800; line-height:1.2; overflow-wrap:anywhere; }
+.case-modal-title p { margin:4px 0 0; color:#809087; font-size:10px; font-weight:650; letter-spacing:.04em; }
+.case-modal-close { display:grid; width:34px; height:34px; flex:0 0 34px; place-items:center; border:1px solid #e4ece6; border-radius:9px; color:#728278; background:#fff; cursor:pointer; }
+.case-modal-close:hover { border-color:#cce5d5; color:#167b55; background:#f4faf6; }
+.case-modal-summary { display:flex; flex-wrap:wrap; gap:8px 18px; padding:11px 24px; border-bottom:1px solid #edf2ee; background:#f9fcfa; }
+.case-modal-summary span { display:inline-flex; align-items:center; gap:6px; color:#6e8075; font-size:9px; }
+.case-modal-summary i { color:#168b64; font-size:11px; }
+.case-detail-tabs { display:flex; gap:4px; padding:0 20px; border-bottom:1px solid #e8efe9; background:#fff; }
+.case-detail-tabs button { position:relative; display:inline-flex; min-height:48px; align-items:center; gap:7px; padding:0 13px; border:0; color:#75867c; background:transparent; cursor:pointer; font-size:10px; font-weight:700; }
+.case-detail-tabs button::after { position:absolute; right:10px; bottom:-1px; left:10px; height:2px; border-radius:2px 2px 0 0; background:transparent; content:""; }
+.case-detail-tabs button.active { color:#137d57; }
+.case-detail-tabs button.active::after { background:#18a675; }
+.case-detail-tabs button small { display:grid; min-width:18px; height:18px; place-items:center; padding:0 5px; border-radius:20px; color:#698076; background:#f0f5f1; font-size:8px; }
+.case-detail-tabs button.active small { color:#187a55; background:#e7f5ec; }
+.case-modal-body { min-height:260px; flex:1; overflow-y:auto; padding:20px 24px 24px; background:#fbfdfb; }
+.case-tab-panel { display:grid; gap:15px; }
+.case-overview-layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(230px,.85fr); gap:14px; align-items:start; }
+.case-info-card { padding:17px; border:1px solid #e4ece6; border-radius:12px; background:#fff; box-shadow:0 3px 12px rgba(28,69,42,.025); }
+.case-section-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.case-section-heading h3,.discussion-heading h3 { margin:4px 0 0; color:#263f30; font-size:14px; font-weight:800; }
+.case-description-card > p { margin:14px 0 0; color:#596e60; font-size:11px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; }
+.case-type-pill,.case-tab-count { display:inline-flex; padding:5px 9px; border:1px solid #dcece1; border-radius:20px; color:#277650; background:#f3faf5; font-size:8px; font-weight:750; text-transform:capitalize; }
+.case-overview-side { display:grid; gap:12px; }
+.access-card-status { display:flex; gap:10px; align-items:flex-start; margin-top:12px; }
+.access-card-status > i { color:#17956a; font-size:19px; }
+.access-card-status strong,.access-card-status small { display:block; }
+.access-card-status strong { color:#31483a; font-size:10px; }
+.access-card-status small { margin-top:4px; color:#829187; font-size:9px; line-height:1.5; }
+.access-card-counts { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid #edf2ee; }
+.access-card-counts div { display:grid; gap:3px; }
+.access-card-counts strong { color:#264b36; font-size:17px; }
+.access-card-counts span { color:#819087; font-size:8px; }
+.case-actions-card { display:grid; gap:6px; }
+.case-actions-card > button { display:flex; align-items:center; gap:8px; padding:8px 9px; border:1px solid #edf2ee; border-radius:7px; color:#496653; text-align:left; background:#fbfdfb; cursor:pointer; font-size:9px; font-weight:650; }
+.case-actions-card > button:hover { border-color:#cde6d6; color:#147b55; background:#f2faf5; }
+.case-actions-card > button i { color:#198c63; }
+.restricted-summary { border-color:#e2ebe5; color:#667a6d; background:#f7faf8; }
+.restricted-summary small { color:#87958c; }
+.case-tab-intro { align-items:flex-start; margin-bottom:2px; }
+.case-tab-intro h3 { margin:4px 0 3px; color:#263f30; font-size:15px; font-weight:800; }
+.case-tab-intro p { margin:4px 0 0; color:#809087; font-size:9px; line-height:1.5; }
+.case-evidence-grid { display:grid; gap:9px; }
+.case-evidence-card { display:flex; min-width:0; align-items:flex-start; gap:12px; padding:13px; border:1px solid #e3ece6; border-radius:10px; background:#fff; }
+.case-evidence-icon { display:grid; width:36px; height:36px; flex:0 0 36px; place-items:center; border-radius:9px; color:#17885f; background:#edf8f1; font-size:16px; }
+.case-evidence-main { display:grid; min-width:0; flex:1; gap:5px; }
+.case-evidence-main > strong { color:#30483a; font-size:10px; overflow-wrap:anywhere; }
+.case-evidence-main > p { margin:0; color:#73847a; font-size:9px; line-height:1.5; }
+.case-evidence-meta { display:flex; flex-wrap:wrap; gap:5px; }
+.case-evidence-meta span { padding:3px 7px; border-radius:20px; color:#64796a; background:#f2f6f3; font-size:8px; text-transform:capitalize; }
+.case-evidence-main code { display:block; overflow:hidden; color:#438765; font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
+.case-evidence-card .evidence-save-button { flex:0 0 auto; align-self:center; gap:6px; border-color:#d4e9dc; color:#237b53; font-size:9px; }
+.case-tab-empty { display:grid; min-height:170px; align-content:center; justify-items:center; gap:8px; padding:25px; border:1px dashed #d9e7dd; border-radius:12px; color:#84958a; text-align:center; background:#fff; }
+.case-tab-empty > i { color:#7cae8d; font-size:25px; }
+.case-tab-empty strong { color:#3c5846; font-size:11px; }
+.case-tab-empty span { max-width:360px; color:#84958a; font-size:9px; line-height:1.55; }
+.case-subtle-button { display:inline-flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid #dce9e0; border-radius:7px; color:#557361; background:#fff; cursor:pointer; font-size:9px; }
+.case-subtle-button:disabled { opacity:.5; cursor:wait; }
+.related-case-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.related-case-card { display:flex; min-width:0; align-items:flex-start; gap:10px; padding:12px; border:1px solid #e2ebe5; border-radius:10px; color:inherit; text-align:left; background:#fff; cursor:pointer; }
+.related-case-card:hover { border-color:#c7e4d2; background:#f7fcf8; }
+.related-case-card-icon { display:grid; width:34px; height:34px; flex:0 0 34px; place-items:center; border-radius:9px; color:#18865e; background:#edf8f1; }
+.related-case-card-copy { display:grid; min-width:0; flex:1; gap:4px; }
+.related-case-card-copy strong { color:#16865e; font-size:9px; }
+.related-case-card-copy b { color:#344b3b; font-size:10px; overflow-wrap:anywhere; }
+.related-case-card-copy small { color:#809087; font-size:8px; line-height:1.45; }
+.related-case-open { margin-left:auto; color:#8aa092; font-size:11px; }
+.case-discussion-tab .repository-discussion-panel { gap:11px; padding:0; border:0; background:transparent; }
+.case-discussion-tab .discussion-heading { align-items:center; padding:0 0 11px; border-bottom:1px solid #e6eee8; }
+.case-discussion-tab .discussion-heading h3 { font-size:14px; }
+.case-discussion-tab .discussion-heading small { max-width:620px; color:#829187; font-size:9px; }
+.case-discussion-tab .discussion-composer { padding:13px; border-color:#dfeae3; border-radius:10px; background:#fff; }
+.case-discussion-tab .discussion-composer textarea,.case-discussion-tab .discussion-reply-form textarea,.case-discussion-tab .collaboration-invite-panel textarea { min-height:74px; border-color:#dbe7df; border-radius:8px; color:#30483a; background:#fbfdfb; font-size:10px; }
+.case-discussion-tab .discussion-thread { padding:14px; border-color:#e1ebe4; border-radius:10px; background:#fff; }
+.case-discussion-tab .discussion-thread.discussion-pinned { border-color:#c4e4cf; background:#f7fcf8; }
+.case-discussion-tab .discussion-content { color:#52685a; font-size:10px; line-height:1.65; }
+.case-discussion-tab .discussion-replies { margin-left:18px; }
+.case-discussion-tab .discussion-reply { border:1px solid #edf2ee; border-radius:8px; background:#f9fcfa; }
+.case-modal-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 20px; border-top:1px solid #e8efe9; background:#fff; }
+.case-modal-footer > span { display:inline-flex; align-items:center; gap:7px; color:#7d8c82; font-size:8px; line-height:1.4; }
+.case-modal-footer > span i { color:#19936a; font-size:12px; }
+.case-modal-footer > div { display:flex; align-items:center; gap:8px; }
+.case-footer-close { min-height:34px; padding:7px 12px; border:1px solid #e1e9e3; border-radius:7px; color:#617369; background:#fff; cursor:pointer; font-size:9px; font-weight:650; }
+.case-modal-footer .download-button { min-height:34px; padding:7px 12px; border-radius:7px; font-size:9px; font-weight:750; }
+@media (max-width:720px) {
+  .dialog-backdrop { display:block; padding:0; }
+  .case-dialog-redesigned { width:100%; height:100%; max-height:100dvh; border:0; border-radius:0; }
+  .case-modal-header { padding:15px 15px 12px; }
+  .case-modal-summary { gap:7px 12px; padding:9px 15px; }
+  .case-modal-summary span { font-size:8px; }
+  .case-detail-tabs { justify-content:space-between; gap:0; padding:0 8px; }
+  .case-detail-tabs button { min-height:46px; gap:5px; padding:0 8px; font-size:8px; }
+  .case-detail-tabs button span { max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .case-modal-body { padding:14px 13px 20px; }
+  .case-overview-layout { grid-template-columns:1fr; }
+  .case-overview-side { grid-template-columns:1fr; }
+  .related-case-grid { grid-template-columns:1fr; }
+  .case-evidence-card { gap:8px; padding:10px; }
+  .case-evidence-card .evidence-save-button { padding:6px; }
+  .case-evidence-card .evidence-save-button span { display:none; }
+  .case-modal-footer { align-items:stretch; flex-direction:column; padding:10px 13px calc(10px + env(safe-area-inset-bottom)); }
+  .case-modal-footer > div { width:100%; }
+  .case-modal-footer > div button { flex:1; justify-content:center; }
+  .case-discussion-tab .discussion-heading { align-items:flex-start; }
+  .case-discussion-tab .discussion-replies { margin-left:8px; padding-left:8px; }
+}
+@media (max-width:420px) {
+  .case-modal-icon { width:39px; height:39px; flex-basis:39px; font-size:18px; }
+  .case-modal-title h2 { font-size:16px; }
+  .case-modal-status { font-size:7px; }
+  .case-detail-tabs button { flex-direction:column; justify-content:center; gap:2px; min-width:0; padding:4px 6px; }
+  .case-detail-tabs button small { position:absolute; top:4px; right:0; min-width:15px; height:15px; font-size:7px; }
+  .case-modal-summary { display:grid; grid-template-columns:1fr 1fr; }
+  .case-modal-footer > span { font-size:7px; }
 }
 
 </style>
