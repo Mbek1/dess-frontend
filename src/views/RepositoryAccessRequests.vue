@@ -45,7 +45,7 @@
             <input
               type="checkbox"
               :checked="selectedIds(request._id).includes(evidence._id)"
-              @change="toggleEvidence(request._id, evidence._id, ($event.target as HTMLInputElement).checked)"
+              @change="toggleEvidence(request._id, evidence._id, !selectedIds(request._id).includes(evidence._id))"
             />
             <span class="choice-icon"><i class="bi bi-file-earmark-lock"></i></span>
             <span class="choice-copy"><strong>{{ evidence.name }}</strong><small>{{ evidence.type || 'Unclassified' }} · {{ evidence.format || 'File' }}<span v-if="evidence.fileSize"> · {{ formatSize(evidence.fileSize) }}</span></small><small v-if="evidence.description">{{ evidence.description }}</small></span>
