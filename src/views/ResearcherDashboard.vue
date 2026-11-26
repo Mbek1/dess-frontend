@@ -185,10 +185,9 @@
                 <button type="button" class="case-subtle-button" :disabled="cancellingAccessRequest" @click="cancelAccessRequest(selectedCaseAccessRequest._id)">{{ cancellingAccessRequest ? 'Cancelling…' : 'Cancel request' }}</button>
               </div>
               <div v-else-if="selectedCaseAccessRequest" class="access-request-state">
-                <span><i class="bi bi-info-circle"></i> Latest request: {{ selectedCaseAccessRequest.status }}<small v-if="selectedCaseAccessRequest.decisionNote"> · {{ selectedCaseAccessRequest.decisionNote }}</small></span>
-                <button type="button" class="case-subtle-button" @click="selectedCaseAccessRequest = null">Request again</button>
+                <span><i class="bi bi-info-circle"></i> Your latest request was {{ selectedCaseAccessRequest.status }}.<small v-if="selectedCaseAccessRequest.decisionNote"> · {{ selectedCaseAccessRequest.decisionNote }}</small></span>
               </div>
-              <form v-else class="access-request-form" @submit.prevent="submitAccessRequest">
+              <form v-if="selectedCaseAccessRequest?.status !== 'pending'" class="access-request-form" @submit.prevent="submitAccessRequest">
                 <label>Research purpose
                   <textarea v-model.trim="accessPurpose" rows="3" minlength="20" maxlength="2000" placeholder="Explain your research question and why additional evidence access is relevant..." required></textarea>
                 </label>
