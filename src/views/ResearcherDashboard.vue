@@ -102,22 +102,34 @@
           <span><i class="bi bi-chat-square-text"></i>{{ discussions.length }} discussions</span>
         </div>
 
-        <nav class="case-detail-tabs" role="tablist" aria-label="Case details sections">
-          <button type="button" role="tab" :aria-selected="activeCaseTab === 'overview'" :class="{ active: activeCaseTab === 'overview' }" @click="activeCaseTab = 'overview'">
-            <i class="bi bi-info-circle"></i><span>Overview</span>
-          </button>
-          <button type="button" role="tab" :aria-selected="activeCaseTab === 'evidence'" :class="{ active: activeCaseTab === 'evidence' }" @click="activeCaseTab = 'evidence'">
-            <i class="bi bi-file-earmark-lock"></i><span>Evidence</span><small>{{ selectedCase.evidence.length }}</small>
-          </button>
-          <button type="button" role="tab" :aria-selected="activeCaseTab === 'related'" :class="{ active: activeCaseTab === 'related' }" @click="activeCaseTab = 'related'">
-            <i class="bi bi-diagram-2"></i><span>Related cases</span><small>{{ relatedLoading ? '…' : relatedCases.length }}</small>
-          </button>
-          <button type="button" role="tab" :aria-selected="activeCaseTab === 'discussion'" :class="{ active: activeCaseTab === 'discussion' }" @click="activeCaseTab = 'discussion'">
-            <i class="bi bi-chat-square-text"></i><span>Discussion</span><small>{{ discussions.length }}</small>
-          </button>
-        </nav>
-
-        <div class="case-modal-body">
+        <div class="case-workspace-layout">
+          <aside class="case-workspace-sidebar" aria-label="Case workspace navigation">
+            <div class="workspace-sidebar-label">CASE WORKSPACE</div>
+            <nav class="case-detail-tabs" role="tablist" aria-label="Case details sections">
+              <button type="button" role="tab" :aria-selected="activeCaseTab === 'overview'" :class="{ active: activeCaseTab === 'overview' }" @click="activeCaseTab = 'overview'">
+                <i class="bi bi-grid-1x2"></i><span>Overview</span>
+              </button>
+              <button type="button" role="tab" :aria-selected="activeCaseTab === 'evidence'" :class="{ active: activeCaseTab === 'evidence' }" @click="activeCaseTab = 'evidence'">
+                <i class="bi bi-file-earmark-lock"></i><span>Evidence</span><small>{{ selectedCase.evidence.length }}</small>
+              </button>
+              <button type="button" role="tab" :aria-selected="activeCaseTab === 'related'" :class="{ active: activeCaseTab === 'related' }" @click="activeCaseTab = 'related'">
+                <i class="bi bi-diagram-2"></i><span>Related cases</span><small>{{ relatedLoading ? '…' : relatedCases.length }}</small>
+              </button>
+              <button type="button" role="tab" :aria-selected="activeCaseTab === 'discussion'" :class="{ active: activeCaseTab === 'discussion' }" @click="activeCaseTab = 'discussion'">
+                <i class="bi bi-chat-square-text"></i><span>Discussion</span><small>{{ discussions.length }}</small>
+              </button>
+            </nav>
+            <div class="case-sidebar-access">
+              <span class="sidebar-access-icon"><i class="bi bi-shield-check"></i></span>
+              <strong>Research access</strong>
+              <p>Only material explicitly shared by the case team is available in this workspace.</p>
+              <div class="sidebar-access-counts">
+                <span><b>{{ sharedEvidence(selectedCase).length }}</b> Available</span>
+                <span><b>{{ restrictedCount(selectedCase) }}</b> Restricted</span>
+              </div>
+            </div>
+          </aside>
+          <div class="case-modal-body">
           <section v-if="activeCaseTab === 'overview'" class="case-tab-panel" role="tabpanel">
             <div class="case-overview-layout">
               <article class="case-info-card case-description-card">
@@ -234,6 +246,7 @@
               </div>
             </section>
           </section>
+          </div>
         </div>
 
         <footer class="case-modal-footer">
@@ -1080,6 +1093,236 @@ onBeforeUnmount(() => {
   .case-detail-tabs button small { position:absolute; top:4px; right:0; min-width:15px; height:15px; font-size:7px; }
   .case-modal-summary { display:grid; grid-template-columns:1fr 1fr; }
   .case-modal-footer > span { font-size:7px; }
+}
+
+
+/* Case Repository: immersive research workspace visual refresh */
+.case-dialog-redesigned {
+  display: flex;
+  width: min(1180px, calc(100vw - 64px));
+  height: min(900px, 90vh);
+  max-height: 90vh;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #d7e7dc;
+  border-radius: 20px;
+  background: #f8fbf9;
+  box-shadow: 0 32px 100px rgba(13, 43, 27, .30);
+}
+.case-modal-header {
+  min-height: 104px;
+  align-items: center;
+  padding: 22px 28px;
+  border-bottom: 1px solid #e2ede5;
+  background:
+    radial-gradient(circle at 78% 5%, rgba(30, 171, 116, .12), transparent 28%),
+    linear-gradient(115deg, #ffffff 0%, #f7fcf8 100%);
+}
+.case-modal-heading { gap: 17px; }
+.case-modal-icon {
+  width: 58px;
+  height: 58px;
+  flex-basis: 58px;
+  border: 1px solid #c9e7d4;
+  border-radius: 17px;
+  color: #0e875b;
+  background: linear-gradient(145deg, #eaf8ef, #d9f1e2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 6px 18px rgba(27, 129, 82, .08);
+  font-size: 24px;
+}
+.case-modal-kickers { gap: 10px; margin-bottom: 7px; }
+.case-modal-eyebrow { font-size: 10px; letter-spacing: .16em; }
+.case-modal-status { padding: 5px 10px; font-size: 9px; }
+.case-modal-title h2 { font-size: clamp(21px, 2.1vw, 28px); letter-spacing: -.035em; }
+.case-modal-title p { margin-top: 6px; font-size: 11px; }
+.case-modal-close { width: 38px; height: 38px; flex-basis: 38px; border-radius: 11px; font-size: 13px; }
+.case-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px 26px;
+  border-bottom: 1px solid #e6eee8;
+  background: #fff;
+}
+.case-modal-summary span {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border: 1px solid #edf2ee;
+  border-radius: 10px;
+  color: #536d5d;
+  background: #fbfdfb;
+  font-size: 10px;
+  font-weight: 650;
+}
+.case-modal-summary i { color: #15966b; font-size: 15px; }
+.case-workspace-layout {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: 224px minmax(0, 1fr);
+  overflow: hidden;
+  background: #f7faf8;
+}
+.case-workspace-sidebar {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 15px;
+  padding: 22px 14px 16px;
+  border-right: 1px solid #e1ebe4;
+  background: linear-gradient(180deg, #f4faf6 0%, #f9fcfa 100%);
+}
+.workspace-sidebar-label {
+  padding: 0 11px;
+  color: #8a9b90;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .15em;
+}
+.case-workspace-sidebar .case-detail-tabs {
+  display: grid;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.case-workspace-sidebar .case-detail-tabs button {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  gap: 11px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #65796c;
+  text-align: left;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+.case-workspace-sidebar .case-detail-tabs button::after { display: none; }
+.case-workspace-sidebar .case-detail-tabs button > i { width: 18px; color: #80978a; font-size: 15px; text-align: center; }
+.case-workspace-sidebar .case-detail-tabs button > span { flex: 1; }
+.case-workspace-sidebar .case-detail-tabs button > small { min-width: 21px; height: 21px; border: 1px solid #e5eee8; color: #6e8677; background: #fff; font-size: 9px; }
+.case-workspace-sidebar .case-detail-tabs button:hover { border-color: #e0ece4; color: #26734f; background: rgba(255,255,255,.72); }
+.case-workspace-sidebar .case-detail-tabs button.active {
+  border-color: #cce8d6;
+  color: #116c48;
+  background: #e9f7ee;
+  box-shadow: 0 4px 12px rgba(30, 125, 77, .06);
+}
+.case-workspace-sidebar .case-detail-tabs button.active > i { color: #109765; }
+.case-workspace-sidebar .case-detail-tabs button.active > small { border-color: #d2eadb; color: #16764e; background: #f8fdf9; }
+.case-sidebar-access {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+  padding: 14px 13px;
+  border: 1px solid #dcebe1;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #ffffff, #f4faf6);
+  box-shadow: 0 5px 18px rgba(25, 90, 52, .035);
+}
+.sidebar-access-icon {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 9px;
+  color: #16875b;
+  background: #e7f6ec;
+  font-size: 15px;
+}
+.case-sidebar-access strong { color: #2d4b38; font-size: 11px; }
+.case-sidebar-access p { margin: 0; color: #819187; font-size: 9px; line-height: 1.55; }
+.sidebar-access-counts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-top: 9px; border-top: 1px solid #eaf1ec; }
+.sidebar-access-counts span { display: grid; gap: 2px; color: #839188; font-size: 8px; }
+.sidebar-access-counts b { color: #2a6141; font-size: 15px; }
+.case-workspace-layout .case-modal-body {
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  flex: 1;
+  overflow: auto;
+  padding: 26px clamp(20px, 2.8vw, 36px) 32px;
+  background: #f8fbf9;
+  scrollbar-color: #c8d9ce transparent;
+}
+.case-workspace-layout .case-tab-panel { gap: 18px; }
+.case-workspace-layout .case-info-card { padding: 21px; border-color: #e1ebe4; border-radius: 14px; box-shadow: 0 5px 18px rgba(27, 75, 43, .035); }
+.case-workspace-layout .case-section-eyebrow { font-size: 9px; letter-spacing: .14em; }
+.case-workspace-layout .case-section-heading h3,
+.case-workspace-layout .discussion-heading h3 { font-size: 17px; }
+.case-workspace-layout .case-description-card > p { font-size: 13px; line-height: 1.8; }
+.case-workspace-layout .access-card-status strong { font-size: 12px; }
+.case-workspace-layout .access-card-status small { font-size: 10px; }
+.case-workspace-layout .case-actions-card > button,
+.case-workspace-layout .case-actions-link { min-height: 38px; font-size: 10px; }
+.case-workspace-layout .case-tab-intro h3 { font-size: 19px; }
+.case-workspace-layout .case-tab-intro p { font-size: 11px; }
+.case-workspace-layout .case-evidence-card { padding: 16px; border-radius: 12px; box-shadow: 0 4px 14px rgba(27, 75, 43, .025); }
+.case-workspace-layout .case-evidence-main > strong { font-size: 12px; }
+.case-workspace-layout .case-evidence-main > p { font-size: 11px; }
+.case-workspace-layout .case-evidence-meta span { font-size: 9px; }
+.case-workspace-layout .case-evidence-main code { font-size: 9px; }
+.case-workspace-layout .related-case-card { min-height: 92px; padding: 15px; border-radius: 12px; }
+.case-workspace-layout .related-case-card-copy strong { font-size: 10px; }
+.case-workspace-layout .related-case-card-copy b { font-size: 12px; }
+.case-workspace-layout .related-case-card-copy small { font-size: 9px; }
+.case-workspace-layout .case-discussion-tab .discussion-heading small { font-size: 10px; line-height: 1.55; }
+.case-workspace-layout .case-discussion-tab .discussion-composer { padding: 17px; border-radius: 12px; }
+.case-workspace-layout .case-discussion-tab .discussion-composer textarea,
+.case-workspace-layout .case-discussion-tab .discussion-reply-form textarea,
+.case-workspace-layout .case-discussion-tab .collaboration-invite-panel textarea { font-size: 12px; }
+.case-workspace-layout .case-discussion-tab .discussion-thread { padding: 17px; border-radius: 12px; }
+.case-workspace-layout .case-discussion-tab .discussion-content { font-size: 12px; line-height: 1.75; }
+.case-modal-footer { min-height: 58px; padding: 11px 24px; }
+.case-modal-footer > span { font-size: 9px; }
+.case-footer-close { min-height: 37px; font-size: 10px; }
+.case-modal-footer .download-button { min-height: 37px; font-size: 10px; }
+@media (max-width: 820px) {
+  .case-dialog-redesigned { width: min(100vw - 28px, 1180px); height: min(94vh, 900px); max-height: 94vh; }
+  .case-workspace-layout { grid-template-columns: 190px minmax(0, 1fr); }
+  .case-workspace-sidebar { padding-right: 10px; padding-left: 10px; }
+  .case-modal-summary { padding-right: 18px; padding-left: 18px; }
+  .case-modal-summary span { padding: 7px 8px; font-size: 9px; }
+  .case-workspace-layout .case-modal-body { padding: 22px 18px 26px; }
+}
+@media (max-width: 650px) {
+  .case-dialog-redesigned { width: 100%; height: 100%; max-height: 100dvh; border: 0; border-radius: 0; }
+  .case-modal-header { min-height: 82px; padding: 14px 15px; }
+  .case-modal-icon { width: 43px; height: 43px; flex-basis: 43px; border-radius: 12px; font-size: 19px; }
+  .case-modal-title h2 { font-size: 19px; }
+  .case-modal-summary { grid-template-columns: 1fr 1fr; gap: 7px; padding: 10px 13px; }
+  .case-modal-summary span { min-height: 37px; font-size: 8px; }
+  .case-workspace-layout { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+  .case-workspace-sidebar { flex: 0 0 auto; gap: 8px; padding: 9px 10px 7px; border-right: 0; border-bottom: 1px solid #e1ebe4; }
+  .workspace-sidebar-label,.case-sidebar-access { display: none; }
+  .case-workspace-sidebar .case-detail-tabs { display: flex; gap: 5px; overflow-x: auto; padding: 0 0 2px; scrollbar-width: none; }
+  .case-workspace-sidebar .case-detail-tabs::-webkit-scrollbar { display: none; }
+  .case-workspace-sidebar .case-detail-tabs button { width: auto; min-width: max-content; min-height: 42px; gap: 6px; padding: 0 11px; border-radius: 8px; font-size: 9px; }
+  .case-workspace-sidebar .case-detail-tabs button > i { width: auto; font-size: 13px; }
+  .case-workspace-sidebar .case-detail-tabs button > small { min-width: 18px; height: 18px; font-size: 8px; }
+  .case-workspace-layout .case-modal-body { padding: 16px 13px 22px; }
+  .case-workspace-layout .case-info-card { padding: 16px; }
+  .case-workspace-layout .case-description-card > p { font-size: 12px; }
+  .case-overview-layout { grid-template-columns: 1fr; }
+  .case-overview-side { grid-template-columns: 1fr; }
+  .case-modal-footer { padding: 9px 12px calc(9px + env(safe-area-inset-bottom)); }
+  .case-modal-footer > div { width: 100%; }
+  .case-modal-footer > div button { flex: 1; }
+}
+@media (max-width: 390px) {
+  .case-modal-summary { grid-template-columns: 1fr 1fr; }
+  .case-modal-summary span { gap: 6px; font-size: 7px; }
+  .case-modal-title h2 { font-size: 16px; }
+  .case-modal-status { font-size: 7px; }
+  .case-detail-tabs button { flex-direction: row; }
 }
 
 </style>
