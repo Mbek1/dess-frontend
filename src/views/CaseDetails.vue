@@ -59,7 +59,7 @@
       </div>
       <div v-if="filteredEvidence.length">
         <ul class="list-group evidence-list">
-          <li v-for="ev in filteredEvidence" :key="ev._id || ev.filename" class="list-group-item d-flex align-items-center gap-3">
+          <li v-for="ev in filteredEvidence" :key="ev._id || ev.filename" class="list-group-item d-flex align-items-center gap-3 flex-wrap">
             <div class="evidence-icon"><i class="bi bi-file-earmark-text"></i></div>
             <div class="flex-grow-1">
               <div class="fw-semibold">{{ ev.name || ev.filename }}</div>
@@ -110,6 +110,9 @@
                 <i class="bi bi-shield-check"></i> {{ verifyingEvidenceId === ev._id ? 'Checking...' : 'Verify' }}
               </button>
               <button class="btn btn-sm btn-outline-info" @click="viewEvidence(ev)" title="View uploaded evidence"><i class="bi bi-eye"></i> View file</button>
+              <button class="btn btn-sm btn-outline-secondary" :disabled="custodyLoadingId === ev._id" @click="toggleCustody(ev)">
+                <i class="bi bi-diagram-3"></i> {{ custodyLoadingId === ev._id ? 'Loading...' : custodyEvidenceId === ev._id ? 'Hide custody' : 'Chain of custody' }}
+              </button>
               <button class="btn btn-sm" :class="ev.visibleToResearchers ? 'btn-outline-warning' : 'btn-outline-primary'" :disabled="ev.deletionRequest?.status === 'pending'" @click="toggleResearcherVisibility(ev)">
                 <i class="bi" :class="ev.visibleToResearchers ? 'bi-eye-slash' : 'bi-globe2'"></i>
                 {{ ev.visibleToResearchers ? 'Make private' : 'Share with researchers' }}
@@ -121,6 +124,34 @@
               <button v-else-if="!ev.deleted" class="btn btn-sm btn-outline-danger" @click="openDeleteModal(ev)">
                 <i class="bi bi-trash3"></i> Request deletion
               </button>
+            </div>
+            <div v-if="custodyEvidenceId === ev._id" class="w-100 border-top pt-3 mt-1">
+              <div v-if="custodyHistory[ev._id]" class="small">
+                <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                  <strong>Evidence chain of custody</strong>
+                  <span class="text-muted">{{ custodyHistory[ev._id].eventCount }} recorded events</span>
+                </div>
+                <div class="small text-muted mb-2 text-break">
+                  SHA-256: {{ custodyHistory[ev._id].evidence.hash }} ·
+                  {{ formatFileSize(custodyHistory[ev._id].evidence.fileSize) }} ·
+                  Status: {{ custodyHistory[ev._id].evidence.integrityStatus }}
+                </div>
+                <div v-if="custodyHistory[ev._id].events.length" class="custody-timeline">
+                  <article v-for="event in custodyHistory[ev._id].events" :key="event.id" class="custody-event">
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                      <strong>{{ event.description || event.action }}</strong>
+                      <time>{{ formatActivityDate(event.occurredAt) }}</time>
+                    </div>
+                    <div class="text-muted">{{ event.performedBy.name }} · {{ event.action.replaceAll('_', ' ') }}</div>
+                    <details v-if="Object.keys(event.details || {}).length" class="mt-1">
+                      <summary>Event details</summary>
+                      <pre class="small mb-0 mt-1">{{ JSON.stringify(event.details, null, 2) }}</pre>
+                    </details>
+                  </article>
+                </div>
+                <p v-else class="text-muted mb-0">No custody events have been recorded for this evidence yet.</p>
+              </div>
+              <div v-else class="text-muted small">No chain-of-custody information is available.</div>
             </div>
           </li>
         </ul>
@@ -351,6 +382,9 @@ const addingEvidence = ref(false);
 const addEvidenceError = ref('');
 const verifyingEvidenceId = ref<string | null>(null);
 const verificationResults = ref<Record<string, { matches: boolean; error?: string }>>({});
+const custodyEvidenceId = ref<string | null>(null);
+const custodyLoadingId = ref<string | null>(null);
+const custodyHistory = ref<Record<string, any>>({});
 const evidencePreview = ref<{ name: string; mimeType: string; hash: string; url: string } | null>(null);
 const evidenceActionError = ref('');
 const requestingDeletion = ref(false);
@@ -473,6 +507,25 @@ async function submitEvidence() {
   }
 }
 
+async function toggleCustody(ev: any) {
+  if (!caseItem.value || !ev?._id) return;
+  if (custodyEvidenceId.value === ev._id) {
+    custodyEvidenceId.value = null;
+    return;
+  }
+  custodyEvidenceId.value = ev._id;
+  custodyLoadingId.value = ev._id;
+  try {
+    const response = await axios.get(`/api/cases/${caseItem.value._id}/evidence/${ev._id}/chain-of-custody`);
+    custodyHistory.value[ev._id] = response.data;
+  } catch (err: any) {
+    evidenceActionError.value = err?.response?.data?.error || 'Could not load evidence chain of custody';
+    custodyEvidenceId.value = null;
+  } finally {
+    custodyLoadingId.value = null;
+  }
+}
+
 function formatFileSize(bytes: number) {
   if (!Number.isFinite(bytes) || bytes <= 0) return 'Unknown';
   if (bytes < 1024) return `${bytes} B`;
@@ -512,6 +565,33 @@ async function verifyEvidence(ev: any) {
 .case-workspace-tabs button.active { border-color: #9db9e8; color: #174f9d; background: #edf4ff; }
 .case-workspace-tabs button span { display: inline-grid; min-width: 21px; height: 21px; place-items: center; padding: 0 5px; border-radius: 12px; background: #e6edf7; font-size: .7rem; }
 .evidence-filters { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(160px, 1fr)); gap: 9px; }
+.custody-timeline {
+  border-left: 2px solid var(--bs-border-color, #dee2e6);
+  margin-left: 5px;
+  padding-left: 14px;
+}
+.custody-event {
+  position: relative;
+  padding: 0 0 14px;
+}
+.custody-event::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bs-info, #0dcaf0);
+}
+.custody-event time {
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: .78rem;
+}
+.custody-event pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .activity-list { display: grid; gap: 0; }
 .activity-item { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid #edf1f6; }
 .activity-marker { display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid #d7e5f7; border-radius: 50%; color: #2563a8; background: #eff6ff; }
