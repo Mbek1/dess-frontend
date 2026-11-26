@@ -514,7 +514,6 @@ async function toggleCustody(ev: any) {
     return;
   }
   custodyEvidenceId.value = ev._id;
-  if (custodyHistory.value[ev._id]) return;
   custodyLoadingId.value = ev._id;
   try {
     const response = await axios.get(`/api/cases/${caseItem.value._id}/evidence/${ev._id}/chain-of-custody`);
