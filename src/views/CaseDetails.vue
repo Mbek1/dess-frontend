@@ -65,7 +65,31 @@
               <div class="fw-semibold">{{ ev.name || ev.filename }}</div>
               <div class="text-muted small">Type: {{ ev.type }} | Format: {{ ev.format }}</div>
               <div class="text-muted small">Description: {{ ev.description }}</div>
-              <div class="text-muted small">Hash: {{ ev.hash }}</div>
+              <div class="text-muted small">File size: {{ formatFileSize(ev.fileSize) }}</div>
+              <div class="text-muted small text-break">SHA-256: {{ ev.hash }}</div>
+              <div class="small mt-1">
+                Integrity:
+                <span class="badge" :class="{
+                  'bg-secondary': !ev.integrityStatus || ev.integrityStatus === 'not_checked',
+                  'bg-success': ev.integrityStatus === 'verified',
+                  'bg-danger': ev.integrityStatus === 'mismatch' || ev.integrityStatus === 'missing'
+                }">
+                  {{ ev.integrityStatus === 'verified' ? 'Verified' : ev.integrityStatus === 'mismatch' ? 'Mismatch detected' : ev.integrityStatus === 'missing' ? 'File missing' : 'Not yet checked' }}
+                </span>
+                <span v-if="ev.verificationHistory?.length" class="text-muted ms-1">
+                  Last checked {{ formatActivityDate(ev.verificationHistory[ev.verificationHistory.length - 1].verifiedAt) }}
+                  by {{ ev.verificationHistory[ev.verificationHistory.length - 1].verifiedByName || 'Unknown user' }}
+                </span>
+              </div>
+              <details v-if="ev.verificationHistory?.length" class="small mt-2">
+                <summary class="text-muted">Verification history ({{ ev.verificationHistory.length }})</summary>
+                <div v-for="(check, index) in [...ev.verificationHistory].reverse()" :key="check._id || index" class="mt-1 text-muted">
+                  {{ formatActivityDate(check.verifiedAt) }} · {{ check.verifiedByName || 'Unknown user' }} ·
+                  <strong :class="check.status === 'verified' ? 'text-success' : 'text-danger'">
+                    {{ check.status === 'verified' ? 'MATCH' : check.status === 'missing' ? 'FILE MISSING' : 'MISMATCH' }}
+                  </strong>
+                </div>
+              </details>
               <span class="badge" :class="ev.visibleToResearchers ? 'bg-success' : 'bg-secondary'">
                 {{ ev.visibleToResearchers ? 'Shared with researchers' : 'DESS team only' }}
               </span>
@@ -449,6 +473,19 @@ async function submitEvidence() {
   }
 }
 
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return 'Unknown';
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let size = bytes / 1024;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex++;
+  }
+  return `${size.toFixed(2)} ${units[unitIndex]}`;
+}
+
 async function verifyEvidence(ev: any) {
   if (!caseItem.value || !ev?._id) return;
   verifyingEvidenceId.value = ev._id;
@@ -456,11 +493,13 @@ async function verifyEvidence(ev: any) {
   try {
     const response = await axios.post(`/api/cases/${caseItem.value._id}/evidence/${ev._id}/verify`);
     verificationResults.value[ev._id] = { matches: response.data.matches };
+    await fetchCase();
   } catch (err: any) {
     verificationResults.value[ev._id] = {
       matches: false,
       error: err?.response?.data?.error || 'Verification failed'
     };
+    if (err?.response?.data?.status === 'missing') await fetchCase();
   } finally {
     verifyingEvidenceId.value = null;
   }
