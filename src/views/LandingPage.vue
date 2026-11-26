@@ -116,29 +116,29 @@
     <section id="audience" class="py-5 bg-white">
       <div class="container">
         <div class="text-center mb-4">
-          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Who DESS is for</p>
-          <h2 class="fw-bold">Built for people who work with digital evidence.</h2>
+          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Who can use DESS</p>
+          <h2 class="fw-bold">Supporting investigative work across different environments.</h2>
         </div>
         <div class="row g-4">
           <div class="col-md-4">
             <article class="p-4 border rounded-3 h-100">
               <i class="bi bi-mortarboard fs-2 text-success"></i>
-              <h5 class="mt-3">Students</h5>
-              <p class="text-muted mb-0">Explore structured case examples, understand how evidence relates to an investigation and strengthen practical digital-forensics learning.</p>
+              <h5 class="mt-3">Education &amp; training</h5>
+              <p class="text-muted mb-0">Support coursework, practical learning, academic projects and the study of documented investigative cases.</p>
             </article>
           </div>
           <div class="col-md-4">
             <article class="p-4 border rounded-3 h-100">
               <i class="bi bi-search fs-2 text-success"></i>
-              <h5 class="mt-3">Researchers</h5>
-              <p class="text-muted mb-0">Search archived cases, compare related case records and review evidence that has been approved for research access.</p>
+              <h5 class="mt-3">Research &amp; professional organisations</h5>
+              <p class="text-muted mb-0">Organise research activity, examine completed cases, preserve findings and support collaboration across teams.</p>
             </article>
           </div>
           <div class="col-md-4">
             <article class="p-4 border rounded-3 h-100">
               <i class="bi bi-shield-check fs-2 text-success"></i>
-              <h5 class="mt-3">Practitioners</h5>
-              <p class="text-muted mb-0">Organize case evidence, record updates, work with assigned teams and preserve useful investigative context.</p>
+              <h5 class="mt-3">Investigative &amp; operational teams</h5>
+              <p class="text-muted mb-0">Manage active casework, keep evidence connected to case records and coordinate authorised team members.</p>
             </article>
           </div>
         </div>
