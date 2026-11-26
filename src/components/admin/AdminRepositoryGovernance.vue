@@ -30,7 +30,8 @@
         <div class="record-topline"><span class="record-kind">{{ report.targetType }} report · {{ categoryLabel(report.category) }}</span><span class="record-status" :class="report.status">{{ report.status.replace('_',' ') }}</span></div>
         <h4>{{ report.caseNumber }} · {{ report.caseTitle }}</h4>
         <p class="record-meta">Submitted by {{ report.reporterName }} · {{ formatDate(report.createdAt) }}</p>
-        <p class="record-description">{{ report.description }}</p>
+        <div class="reported-target"><span>REPORTED MATERIAL <small v-if="report.targetAuthor">· {{ report.targetAuthor }}</small></span><p>{{ report.targetSummary }}</p></div>
+        <p class="record-description"><strong>Report details:</strong> {{ report.description }}</p>
         <label>Review note
           <textarea v-model.trim="reportNotes[report._id]" rows="2" maxlength="2000" placeholder="Record the moderation decision or next step..."></textarea>
         </label>
@@ -246,7 +247,11 @@ onMounted(() => { void loadAll(); });
 .panel-heading { align-items:center; padding-bottom:10px; border-bottom:1px solid #173f62; }.panel-heading h3 { margin:0; color:#e7f3ff; font-size:13px; }.panel-heading span { color:#82a1bd; font-size:9px; white-space:nowrap; }
 .moderation-record { display:grid; gap:9px; padding:13px; border:1px solid #183f62; border-radius:7px; background:#06182e; }
 .record-topline { display:flex; justify-content:space-between; align-items:center; gap:10px; }.record-kind { color:#77c5ff; font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }.record-status { display:inline-flex; width:max-content; padding:4px 7px; border-radius:4px; color:#d4e5f4; background:#1a3b5c; font-size:8px; font-weight:750; text-transform:capitalize; }.record-status.pending,.record-status.in_review,.record-status.under_review { color:#f0d38e; background:#403419; }.record-status.hidden,.record-status.dismissed { color:#efb9c2; background:#472a37; }.record-status.visible,.record-status.actioned,.record-status.approved { color:#9de5ca; background:#123d35; }
-.moderation-record h4 { margin:0; color:#e8f4ff; font-size:12px; }.record-meta { margin:0; color:#7e9bb7; font-size:8px; }.record-description { margin:0; color:#c4d9eb; font-size:10px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }.contribution-content { padding:9px; border-left:2px solid #287bb1; background:#081e36; }
+.moderation-record h4 { margin:0; color:#e8f4ff; font-size:12px; }.record-meta { margin:0; color:#7e9bb7; font-size:8px; }.reported-target { display:grid; gap:5px; padding:9px 10px; border:1px solid #173e60; border-radius:5px; background:#081e36; }
+.reported-target > span { color:#69baff; font-size:8px; font-weight:800; letter-spacing:.08em; }
+.reported-target > span small { color:#83a1bc; font-size:8px; letter-spacing:0; }
+.reported-target p { margin:0; color:#c9dced; font-size:9px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+.record-description { margin:0; color:#c4d9eb; font-size:10px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }.contribution-content { padding:9px; border-left:2px solid #287bb1; background:#081e36; }
 .moderation-record label { display:grid; gap:5px; color:#9eb9d2; font-size:9px; font-weight:700; }
 .moderation-record textarea,.moderation-record select,.governance-search,.filter-row select { width:100%; padding:8px; border:1px solid #294f70; border-radius:5px; color:#dcecff; background:#07182c; font-size:9px; }
 .moderation-record textarea { min-height:52px; resize:vertical; }.moderation-record select { max-width:220px; }
