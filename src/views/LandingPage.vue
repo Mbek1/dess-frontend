@@ -26,9 +26,9 @@
       <div class="container">
         <div class="row align-items-center gy-4">
           <div class="col-lg-7">
-            <p class="text-success fw-semibold text-uppercase mb-3" style="letter-spacing: .12em; font-size: .78rem;">Case-based digital forensics research</p>
+            <p class="text-success fw-semibold text-uppercase mb-3" style="letter-spacing: .12em; font-size: .78rem;">A shared workspace for investigative work</p>
             <h1 class="display-4 fw-bold">Digital Evidence <span class="text-success">Storage System</span></h1>
-            <p class="lead">Bring cases, evidence and documented findings together. DESS is a research and collaboration workspace for cybersecurity and digital-forensics students, researchers and practitioners.</p>
+            <p class="lead">Whether the work is part of an academic project, an institutional research programme or an active investigation, DESS helps people organise case information, manage related evidence and work together with clearer context.</p>
             <div class="d-flex flex-wrap gap-3 mt-4">
               <button class="btn btn-success btn-lg" @click="showAuth = true">Get Started <i class="bi bi-arrow-right ms-1"></i></button>
               <a href="#" @click.prevent="scrollToSection('how-it-works')" class="btn btn-outline-light btn-lg">Explore How It Works</a>
@@ -53,8 +53,8 @@
         <div class="row align-items-center">
           <div class="col-xl-5 mb-4 mb-xl-0">
             <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">About DESS</p>
-            <h2 class="fw-bold">A connected view of every case.</h2>
-            <p class="text-muted">Digital-forensics knowledge can be scattered across case notes, evidence files and individual teams. DESS brings case records, linked evidence, metadata and case updates into one searchable workspace, helping people learn from previous work and collaborate with the right context.</p>
+            <h2 class="fw-bold">A connected workspace for investigative research.</h2>
+            <p class="text-muted">Investigative information is often spread across documents, evidence files, case records and different teams. DESS brings these materials and the people working with them into a structured digital workspace. It supports both the management of ongoing casework and the study of completed cases, whether the work takes place in an educational institution, research organisation or operational environment.</p>
             <a href="#" @click.prevent="scrollToSection('how-it-works')" class="btn btn-link text-success px-0">See how DESS works <i class="bi bi-arrow-right"></i></a>
           </div>
           <div class="col-xl-7">
@@ -70,7 +70,7 @@
                 <div class="p-4 border rounded-3 h-100">
                   <i class="bi bi-fingerprint fs-2 text-success"></i>
                   <h5 class="mt-3">Evidence with context</h5>
-                  <p class="mb-0 text-muted">Associate files with evidence descriptions, classifications and SHA-256 hashes for integrity verification.</p>
+                  <p class="mb-0 text-muted">Associate files with descriptions, classifications, metadata and recorded integrity information.</p>
                 </div>
               </div>
               <div class="col-md-6">
@@ -99,7 +99,7 @@
         <div class="text-center mb-4">
           <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">Platform capabilities</p>
           <h2 class="fw-bold">Everything stays connected to the case.</h2>
-          <p class="text-muted mx-auto" style="max-width: 680px;">DESS helps users move from locating a case to understanding its evidence and collaborating around its context.</p>
+          <p class="text-muted mx-auto" style="max-width: 680px;">DESS provides two connected workspaces: the DESS Portal for managing operational casework, and the Case Repository for researching completed cases and collaborating around approved information.</p>
         </div>
         <div class="row g-4">
           <div class="col-md-3 col-6" v-for="feature in features" :key="feature.title">
@@ -148,23 +148,49 @@
     <!-- How It Works -->
     <section id="how-it-works" class="details section py-5 bg-light">
       <div class="container">
-        <div class="text-center mb-4">
-          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">A simple workflow</p>
-          <h2 class="fw-bold">From case discovery to collaboration.</h2>
+        <div class="text-center mb-5">
+          <p class="text-success fw-semibold text-uppercase mb-2" style="letter-spacing: .1em; font-size: .75rem;">How DESS works</p>
+          <h2 class="fw-bold">One platform. Two purpose-built workspaces.</h2>
+          <p class="text-muted mx-auto" style="max-width: 760px;">Choose the workspace that matches what you need to do. Each has its own tools and access rules, while both support structured, responsible investigative work.</p>
         </div>
         <div class="row g-4">
-          <div class="col-md-4" v-for="(detail, index) in details" :key="detail.title">
-            <article class="p-4 border rounded-3 bg-white h-100">
-              <div class="d-flex align-items-center justify-content-between mb-3">
-                <i :class="detail.icon + ' fs-2 text-success'"></i>
-                <span class="text-muted fw-bold">0{{ index + 1 }}</span>
+          <div class="col-lg-6">
+            <article class="p-4 p-lg-5 border rounded-3 bg-white h-100 shadow-sm">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-3 bg-success bg-opacity-10 p-3"><i class="bi bi-shield-lock fs-2 text-success"></i></div>
+                <div>
+                  <span class="small text-success fw-semibold text-uppercase">For active casework</span>
+                  <h3 class="h4 fw-bold mb-0">DESS Portal</h3>
+                </div>
               </div>
-              <h5>{{ detail.title }}</h5>
-              <ul class="list-unstyled mb-0">
-                <li v-for="item in detail.items" :key="item" class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>{{ item }}</li>
-              </ul>
+              <p class="text-muted">A working environment for authorised personnel and teams responsible for managing cases and their associated evidence.</p>
+              <ol class="list-unstyled mb-0">
+                <li class="d-flex gap-3 mb-3"><span class="badge rounded-pill text-bg-success align-self-start">01</span><div><strong>Create and organise cases</strong><div class="text-muted small">Register case details, assign team members and keep key information together.</div></div></li>
+                <li class="d-flex gap-3 mb-3"><span class="badge rounded-pill text-bg-success align-self-start">02</span><div><strong>Manage evidence and activity</strong><div class="text-muted small">Upload and describe evidence, record case updates and maintain an activity history.</div></div></li>
+                <li class="d-flex gap-3"><span class="badge rounded-pill text-bg-success align-self-start">03</span><div><strong>Coordinate the case team</strong><div class="text-muted small">Use case-linked messaging, notifications and controlled access to support team coordination.</div></div></li>
+              </ol>
             </article>
           </div>
+          <div class="col-lg-6">
+            <article class="p-4 p-lg-5 border rounded-3 bg-white h-100 shadow-sm">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-3 bg-success bg-opacity-10 p-3"><i class="bi bi-journal-richtext fs-2 text-success"></i></div>
+                <div>
+                  <span class="small text-success fw-semibold text-uppercase">For learning and research</span>
+                  <h3 class="h4 fw-bold mb-0">Case Repository</h3>
+                </div>
+              </div>
+              <p class="text-muted">A research environment for people studying completed cases, exploring documented information and collaborating on findings.</p>
+              <ol class="list-unstyled mb-0">
+                <li class="d-flex gap-3 mb-3"><span class="badge rounded-pill text-bg-success align-self-start">01</span><div><strong>Discover completed cases</strong><div class="text-muted small">Search and filter closed case records, explore related cases and review available case context.</div></div></li>
+                <li class="d-flex gap-3 mb-3"><span class="badge rounded-pill text-bg-success align-self-start">02</span><div><strong>Build your research workspace</strong><div class="text-muted small">Bookmark cases and approved evidence, write private notes, organise collections and export research summaries.</div></div></li>
+                <li class="d-flex gap-3"><span class="badge rounded-pill text-bg-success align-self-start">03</span><div><strong>Discuss and collaborate</strong><div class="text-muted small">Join case discussions, reply to contributions and send collaboration requests to other researchers.</div></div></li>
+              </ol>
+            </article>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <p class="small text-muted mb-0"><i class="bi bi-lock-fill text-success me-1"></i>Access to cases and evidence is governed by user roles, case status and the permissions granted by the responsible personnel.</p>
         </div>
       </div>
     </section>
@@ -217,7 +243,7 @@
     <footer class="footer py-4 bg-dark text-white">
       <div class="container text-center">
         <p class="mb-2"><img src="/img/dess-logo.svg" alt="DESS — Digital Evidence Storage System" class="footer-brand-logo" /></p>
-        <small class="d-block text-white-50">A case-based research and collaboration workspace for cybersecurity and digital forensics.</small>
+        <small class="d-block text-white-50">A connected digital workspace for case management, investigative research and collaboration.</small>
         <small class="d-block text-white-50 mt-2">&copy; {{ new Date().getFullYear() }} DESS. For research and collaboration; not a replacement for official evidence-handling or court procedures.</small>
       </div>
     </footer>
@@ -232,43 +258,14 @@ const features = [
   { icon: 'bi bi-folder-check', title: 'Case-linked Evidence' },
   { icon: 'bi bi-journal-text', title: 'Documented Case Updates' },
   { icon: 'bi bi-diagram-3', title: 'Related-case Discovery' },
-  { icon: 'bi bi-fingerprint', title: 'SHA-256 Integrity Checks' },
+  { icon: 'bi bi-fingerprint', title: 'Evidence Metadata & Integrity Records' },
   { icon: 'bi bi-shield-lock', title: 'Role-based Access' },
   { icon: 'bi bi-clock-history', title: 'Activity & Audit Trails' },
   { icon: 'bi bi-chat-square-text', title: 'Case-team Messaging' },
 ];
-const details = [
-  {
-    icon: 'bi bi-search',
-    title: 'Find a case',
-    items: [
-      'Search case records using identifiers, descriptions and keywords',
-      'Explore relevant archived cases and related case records',
-      'Review case classifications and available context',
-    ],
-  },
-  {
-    icon: 'bi bi-folder2-open',
-    title: 'Review evidence and updates',
-    items: [
-      'Keep evidence files linked to the case they belong to',
-      'Review file descriptions, metadata and SHA-256 hashes',
-      'Follow case updates and the recorded activity history',
-    ],
-  },
-  {
-    icon: 'bi bi-people',
-    title: 'Collaborate with context',
-    items: [
-      'Share selected evidence with authorized research accounts',
-      'Use internal messages and case-team discussion rooms',
-      'Contact the case lead when a relevant case is still open',
-    ],
-  },
-];
 const faqs = [
-  { q: 'What is DESS?', a: 'DESS is a case-based digital evidence research and collaboration platform. It connects case records with related evidence, metadata, case updates and team communication.' },
-  { q: 'Who is DESS designed for?', a: 'DESS is intended for cybersecurity and digital-forensics students, researchers and authorized practitioners who need to study, document or collaborate around digital evidence.' },
+  { q: 'What is DESS?', a: 'DESS is a digital workspace that supports both operational case management and research into completed cases. It provides dedicated DESS Portal and Case Repository workspaces with access based on each user’s role and permissions.' },
+  { q: 'Who is DESS designed for?', a: 'DESS can support people involved in investigative work across educational institutions, research groups, organisations and operational teams, including students, researchers, analysts, investigators and other authorised personnel.' },
   { q: 'Can researchers view every case and every file?', a: 'No. Research access is permission-controlled. Researchers can browse closed case records and only the evidence files that have been approved for research access.' },
   { q: 'Can I ask about a related case that is still open?', a: 'When a search identifies a relevant open case, the repository can provide a way to contact the case lead through DESS internal messaging. The open case evidence itself remains restricted.' },
   { q: 'How does DESS support evidence integrity?', a: 'Evidence records include SHA-256 hashes that can be used for file-integrity verification. DESS also maintains time-stamped activity records for supported case actions.' },
