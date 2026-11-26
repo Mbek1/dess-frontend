@@ -58,6 +58,7 @@
           <AdminReporting v-show="currentModule === 'reporting'" />
           <AdminSystemSettings v-show="currentModule === 'settings'" />
           <AdminAccessReview v-show="currentModule === 'access'" />
+          <AdminRepositoryGovernance v-show="currentModule === 'repository'" />
         </div>
       </section>
     </template>
@@ -77,6 +78,7 @@ import AdminAuditLogs from '@/components/admin/AdminAuditLogs.vue';
 import AdminReporting from '@/components/admin/AdminReporting.vue';
 import AdminSystemSettings from '@/components/admin/AdminSystemSettings.vue';
 import AdminAccessReview from '@/components/admin/AdminAccessReview.vue';
+import AdminRepositoryGovernance from '@/components/admin/AdminRepositoryGovernance.vue';
 
 const router = useRouter();
 const currentModule = ref('dashboard');
@@ -92,6 +94,7 @@ const navItems = [
   { id: 'users', label: 'User management', icon: 'people-fill' },
   { id: 'security', label: 'Security & policy', icon: 'shield-lock' },
   { id: 'cases', label: 'Case oversight', icon: 'folder2-open' },
+  { id: 'repository', label: 'Repository governance', icon: 'shield-check' },
   { id: 'feedback', label: 'Feedback inbox', icon: 'chat-square-heart' },
   { id: 'audit', label: 'Audit records', icon: 'journal-text' },
   { id: 'reporting', label: 'Reports', icon: 'file-earmark-bar-graph' },
@@ -103,7 +106,8 @@ const moduleDescriptions: Record<string, string> = {
   dashboard: 'Current system counts and recent administrative activity.',
   users: 'Review user accounts, roles, and access status.',
   security: 'Manage security controls and system policy.',
-  cases: 'Review case records and evidence access.',
+  cases: 'Review operational DESS case records and evidence access.',
+  repository: 'Moderate Case Repository records and contributions, review reports and oversee researcher access requests.',
   feedback: 'Review user submissions and track their resolution status.',
   audit: 'Search recorded administrative and system events.',
   reporting: 'Generate operational and compliance reports.',

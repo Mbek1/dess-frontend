@@ -15,6 +15,7 @@ import LoginModal from '@/components/LoginModal.vue';
 import MessagesPage from '../views/MessagesPage.vue';
 import OrganizationsPage from '../views/OrganizationsPage.vue';
 import ResearchWorkspace from '../views/ResearchWorkspace.vue';
+import RepositoryAccessRequests from '../views/RepositoryAccessRequests.vue';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -93,6 +94,12 @@ const router = createRouter({
       name: 'MessagesPage',
       component: MessagesPage,
       meta: { roles: ['researcher', 'investigator'] },
+    },
+    {
+      path: '/repository-access-requests',
+      name: 'RepositoryAccessRequests',
+      component: RepositoryAccessRequests,
+      meta: { roles: ['investigator'] },
     },
     {
       path: '/archives',

@@ -130,6 +130,28 @@
             </div>
           </aside>
           <div class="case-modal-body">
+          <section v-if="reportTarget" class="repository-report-form" aria-labelledby="repository-report-heading">
+            <div class="report-form-heading">
+              <div><span class="case-section-eyebrow">REPOSITORY GOVERNANCE</span><h3 id="repository-report-heading">Report {{ reportTarget.label }}</h3><p>Reports are reviewed by a DESS administrator. Include enough detail to explain the concern.</p></div>
+              <button type="button" class="case-subtle-button" @click="closeReportForm">Cancel</button>
+            </div>
+            <label>Reason for report
+              <select v-model="reportCategory">
+                <option value="inaccurate_information">Potentially inaccurate information</option>
+                <option value="privacy_concern">Privacy concern</option>
+                <option value="sensitive_information">Sensitive information</option>
+                <option value="inappropriate_content">Inappropriate content</option>
+                <option value="copyright_concern">Copyright concern</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>Details
+              <textarea v-model.trim="reportDescription" rows="3" maxlength="2000" minlength="10" placeholder="Describe the issue and why it should be reviewed..." required></textarea>
+            </label>
+            <p v-if="reportError" class="governance-error" role="alert">{{ reportError }}</p>
+            <p v-if="reportNotice" class="governance-notice" role="status">{{ reportNotice }}</p>
+            <div class="report-form-actions"><small>{{ reportDescription.length }}/2,000 characters</small><button type="button" :disabled="submittingReport || reportDescription.trim().length < 10" @click="submitRepositoryReport">{{ submittingReport ? 'Submitting…' : 'Submit report' }}</button></div>
+          </section>
           <section v-if="activeCaseTab === 'overview'" class="case-tab-panel" role="tabpanel">
             <div class="case-overview-layout">
               <article class="case-info-card case-description-card">
@@ -152,9 +174,29 @@
                   <button type="button" @click="activeCaseTab = 'evidence'"><i class="bi bi-file-earmark-check"></i> Review shared evidence</button>
                   <button type="button" @click="activeCaseTab = 'related'"><i class="bi bi-diagram-3"></i> Explore related cases</button>
                   <button type="button" @click="activeCaseTab = 'discussion'"><i class="bi bi-chat-square-text"></i> Join case discussion</button>
+                  <button type="button" @click="openReport('case', selectedCase._id, 'case record')"><i class="bi bi-flag"></i> Report case record</button>
                 </div>
               </aside>
             </div>
+            <article v-if="restrictedCount(selectedCase)" class="repository-access-card">
+              <div class="repository-access-heading"><span class="repository-access-icon"><i class="bi bi-shield-lock"></i></span><div><strong>Request additional evidence access</strong><p>You can ask the assigned case team to consider selected restricted material for your research. The investigator will decide which individual items, if any, to release.</p></div></div>
+              <div v-if="selectedCaseAccessRequest?.status === 'pending'" class="access-request-state">
+                <span><i class="bi bi-hourglass-split"></i> Your request is pending review by the assigned case team.</span>
+                <button type="button" class="case-subtle-button" :disabled="cancellingAccessRequest" @click="cancelAccessRequest(selectedCaseAccessRequest._id)">{{ cancellingAccessRequest ? 'Cancelling…' : 'Cancel request' }}</button>
+              </div>
+              <div v-else-if="selectedCaseAccessRequest" class="access-request-state">
+                <span><i class="bi bi-info-circle"></i> Your latest request was {{ selectedCaseAccessRequest.status }}.<small v-if="selectedCaseAccessRequest.decisionNote"> · {{ selectedCaseAccessRequest.decisionNote }}</small></span>
+              </div>
+              <form v-if="selectedCaseAccessRequest?.status !== 'pending'" class="access-request-form" @submit.prevent="submitAccessRequest">
+                <label>Research purpose
+                  <textarea v-model.trim="accessPurpose" rows="3" minlength="20" maxlength="2000" placeholder="Explain your research question and why additional evidence access is relevant..." required></textarea>
+                </label>
+                <div class="access-request-actions"><small>{{ accessPurpose.length }}/2,000 characters (minimum 20)</small><button type="submit" :disabled="submittingAccessRequest || accessPurpose.trim().length < 20">{{ submittingAccessRequest ? 'Sending…' : 'Send access request' }}</button></div>
+              </form>
+              <p v-if="accessRequestError" class="governance-error" role="alert">{{ accessRequestError }}</p>
+              <p v-if="accessRequestNotice" class="governance-notice" role="status">{{ accessRequestNotice }}</p>
+              <small class="access-security-note"><i class="bi bi-lock-fill"></i> A request never grants access automatically. Global evidence-sharing settings remain under the control of the case team.</small>
+            </article>
             <div v-if="bookmarkNotice" class="discussion-notice">{{ bookmarkNotice }}</div>
             <div v-if="restrictedCount(selectedCase)" class="restricted-summary">
               <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
@@ -219,10 +261,11 @@
                 </div>
                 <p class="discussion-content">{{ thread.content }}</p>
                 <div class="discussion-actions">
-                  <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
+                  <button v-if="thread.isMine && !thread.isDeleted && !thread.isModerated" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
                   <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="removeDiscussion(thread)"><i class="bi bi-trash3"></i> Delete</button>
-                  <button v-if="!thread.isMine && !thread.isDeleted" type="button" @click="startCollaborationInvite(thread.author)"><i class="bi bi-people"></i> Request collaboration</button>
-                  <button v-if="!thread.isDeleted" type="button" @click="replyingToDiscussionId = replyingToDiscussionId === thread._id ? '' : thread._id"><i class="bi bi-reply"></i> Reply ({{ thread.replies?.length || 0 }})</button>
+                  <button v-if="!thread.isMine && !thread.isDeleted && !thread.isModerated" type="button" @click="startCollaborationInvite(thread.author)"><i class="bi bi-people"></i> Request collaboration</button>
+                  <button v-if="!thread.isMine && !thread.isDeleted && !thread.isModerated" type="button" @click="openReport('discussion', thread._id, 'discussion contribution')"><i class="bi bi-flag"></i> Report</button>
+                  <button v-if="!thread.isDeleted && !thread.isModerated" type="button" @click="replyingToDiscussionId = replyingToDiscussionId === thread._id ? '' : thread._id"><i class="bi bi-reply"></i> Reply ({{ thread.replies?.length || 0 }})</button>
                 </div>
                 <form v-if="replyingToDiscussionId === thread._id" class="discussion-reply-form" @submit.prevent="postDiscussionReply(thread)">
                   <textarea v-model="discussionReplyContent" rows="2" maxlength="5000" placeholder="Write a reply..." required></textarea>
@@ -233,8 +276,9 @@
                     <div class="discussion-author-row"><div class="discussion-author"><span class="discussion-avatar reply-avatar">{{ initials(reply.author?.name) }}</span><span><strong>{{ reply.author?.name || reply.authorName }}</strong><small>{{ reply.author?.userType || 'Researcher' }} · {{ formatDate(reply.createdAt) }}</small></span></div></div>
                     <p class="discussion-content">{{ reply.content }}</p>
                     <div class="discussion-actions">
-                      <button v-if="!reply.isMine && !reply.isDeleted" type="button" @click="startCollaborationInvite(reply.author)"><i class="bi bi-people"></i> Request collaboration</button>
-                      <button v-if="reply.isMine && !reply.isDeleted" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
+                      <button v-if="!reply.isMine && !reply.isDeleted && !reply.isModerated" type="button" @click="startCollaborationInvite(reply.author)"><i class="bi bi-people"></i> Request collaboration</button>
+                      <button v-if="!reply.isMine && !reply.isDeleted && !reply.isModerated" type="button" @click="openReport('discussion', reply._id, 'discussion reply')"><i class="bi bi-flag"></i> Report</button>
+                      <button v-if="reply.isMine && !reply.isDeleted && !reply.isModerated" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
                     </div>
                   </article>
                 </div>
@@ -335,6 +379,21 @@ const collaborationTarget = ref<any>(null);
 const collaborationMessage = ref('');
 const sendingCollaborationInvite = ref(false);
 const bookmarkNotice = ref('');
+const caseAccessRequests = ref<any[]>([]);
+const accessPurpose = ref('');
+const submittingAccessRequest = ref(false);
+const cancellingAccessRequest = ref(false);
+const accessRequestError = ref('');
+const accessRequestNotice = ref('');
+const reportTarget = ref<{ targetType: 'case' | 'discussion'; targetId: string; label: string } | null>(null);
+const reportCategory = ref('inaccurate_information');
+const reportDescription = ref('');
+const reportError = ref('');
+const reportNotice = ref('');
+const submittingReport = ref(false);
+const selectedCaseAccessRequest = computed(() =>
+  caseAccessRequests.value.find(item => String(item.caseId) === String(selectedCase.value?._id) && item.status !== 'cancelled') || null
+);
 const showNotifications = ref(false);
 const notifications = ref<NotificationRecord[]>([]);
 const notificationsLoading = ref(false);
@@ -475,6 +534,105 @@ async function saveBookmark(caseItem: CaseRecord, evidence?: EvidenceSummary) {
     const message = bookmarkError?.message || 'Could not save bookmark.';
     if (belongsToOpenCase) bookmarkNotice.value = message;
     else error.value = message;
+  }
+}
+
+async function loadAccessRequests() {
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-governance/access-requests/mine`, { headers: headers(), credentials: 'include' });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not load evidence access requests.');
+    caseAccessRequests.value = data.requests || [];
+  } catch (requestError: any) {
+    accessRequestError.value = requestError?.message || 'Could not load evidence access requests.';
+  }
+}
+
+async function submitAccessRequest() {
+  if (!selectedCase.value || accessPurpose.value.trim().length < 20) return;
+  submittingAccessRequest.value = true;
+  accessRequestError.value = '';
+  accessRequestNotice.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-governance/access-requests/${selectedCase.value._id}`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ purpose: accessPurpose.value.trim() })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not submit the evidence access request.');
+    accessPurpose.value = '';
+    accessRequestNotice.value = data.message || 'Your request was sent to the assigned case team.';
+    await loadAccessRequests();
+  } catch (requestError: any) {
+    accessRequestError.value = requestError?.message || 'Could not submit the evidence access request.';
+  } finally {
+    submittingAccessRequest.value = false;
+  }
+}
+
+async function cancelAccessRequest(requestId: string) {
+  if (!requestId) return;
+  cancellingAccessRequest.value = true;
+  accessRequestError.value = '';
+  accessRequestNotice.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-governance/access-requests/${encodeURIComponent(requestId)}/cancel`, {
+      method: 'PATCH', headers: headers(), credentials: 'include'
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not cancel the request.');
+    accessRequestNotice.value = 'Your pending request was cancelled.';
+    await loadAccessRequests();
+  } catch (requestError: any) {
+    accessRequestError.value = requestError?.message || 'Could not cancel the request.';
+  } finally {
+    cancellingAccessRequest.value = false;
+  }
+}
+
+function openReport(targetType: 'case' | 'discussion', targetId: string, label: string) {
+  reportTarget.value = { targetType, targetId, label };
+  reportCategory.value = 'inaccurate_information';
+  reportDescription.value = '';
+  reportError.value = '';
+  reportNotice.value = '';
+}
+function closeReportForm() {
+  reportTarget.value = null;
+  reportDescription.value = '';
+  reportError.value = '';
+  reportNotice.value = '';
+}
+async function submitRepositoryReport() {
+  if (!reportTarget.value || reportDescription.value.trim().length < 10) return;
+  submittingReport.value = true;
+  reportError.value = '';
+  reportNotice.value = '';
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/repository-governance/reports`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        targetType: reportTarget.value.targetType,
+        targetId: reportTarget.value.targetId,
+        category: reportCategory.value,
+        description: reportDescription.value.trim()
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Could not submit the report.');
+    reportNotice.value = data.message || 'Your report has been sent to the moderation team.';
+    reportTarget.value = null;
+    reportDescription.value = '';
+    bookmarkNotice.value = reportNotice.value;
+    discussionNotice.value = reportNotice.value;
+  } catch (submitError: any) {
+    reportError.value = submitError?.message || 'Could not submit the report.';
+  } finally {
+    submittingReport.value = false;
   }
 }
 
@@ -630,7 +788,12 @@ async function inspectCase(caseItem: CaseRecord) {
   discussionReplyContent.value = '';
   replyingToDiscussionId.value = '';
   collaborationTarget.value = null;
+  accessPurpose.value = '';
+  accessRequestError.value = '';
+  accessRequestNotice.value = '';
+  reportTarget.value = null;
   relatedCases.value = [];
+  void loadAccessRequests();
   void loadDiscussions(caseItem._id);
   void loadRelatedCases(caseItem._id);
 }
@@ -1323,6 +1486,45 @@ onBeforeUnmount(() => {
   .case-modal-title h2 { font-size: 16px; }
   .case-modal-status { font-size: 7px; }
   .case-detail-tabs button { flex-direction: row; }
+}
+
+
+/* Phase 6 — Case Repository access requests and reporting */
+.repository-access-card,.repository-report-form {
+  display:grid; gap:13px; padding:18px; border:1px solid #dcebe1; border-radius:13px;
+  background:linear-gradient(145deg,#fff,#f5faf6); box-shadow:0 5px 18px rgba(25,90,52,.035);
+}
+.repository-access-heading { display:flex; align-items:flex-start; gap:12px; }
+.repository-access-icon { display:grid; width:38px; height:38px; flex:0 0 38px; place-items:center; border-radius:10px; color:#16875b; background:#e7f6ec; font-size:17px; }
+.repository-access-heading strong { color:#2d4b38; font-size:12px; }
+.repository-access-heading p,.report-form-heading p { margin:4px 0 0; color:#7c8c82; font-size:10px; line-height:1.6; }
+.access-request-form,.repository-report-form { display:grid; gap:10px; }
+.access-request-form label,.repository-report-form label { display:grid; gap:6px; color:#4c6655; font-size:10px; font-weight:700; }
+.access-request-form textarea,.repository-report-form textarea,.repository-report-form select {
+  width:100%; min-height:74px; padding:10px; border:1px solid #d7e6dc; border-radius:8px; color:#30483a; background:#fff; font-size:10px; resize:vertical;
+}
+.repository-report-form { margin-bottom:16px; border-color:#d9e8df; }
+.report-form-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.report-form-heading h3 { margin:4px 0 0; color:#294432; font-size:15px; }
+.report-form-heading p { max-width:560px; }
+.report-form-actions,.access-request-actions { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.report-form-actions small,.access-request-actions small { color:#8a9a90; font-size:8px; }
+.report-form-actions button,.access-request-actions button {
+  min-height:34px; padding:7px 12px; border:1px solid #159968; border-radius:7px; color:#fff; background:#169c6b; cursor:pointer; font-size:9px; font-weight:750;
+}
+.report-form-actions button:disabled,.access-request-actions button:disabled { opacity:.45; cursor:not-allowed; }
+.access-request-state { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 11px; border:1px solid #dcebe1; border-radius:8px; color:#52705d; background:#fff; font-size:9px; }
+.access-request-state > span { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.access-request-state i { color:#168e62; }
+.access-security-note { display:flex; align-items:center; gap:6px; color:#8a9a90; font-size:8px; }
+.governance-error,.governance-notice { margin:0; padding:8px 10px; border-radius:7px; font-size:9px; }
+.governance-error { color:#a84b4b; background:#fff0f0; }
+.governance-notice { color:#277650; background:#eaf7ef; }
+@media(max-width:650px) {
+  .repository-access-card,.repository-report-form { padding:13px; }
+  .report-form-heading,.access-request-state { align-items:flex-start; flex-direction:column; }
+  .report-form-actions,.access-request-actions { align-items:stretch; flex-direction:column; }
+  .report-form-actions button,.access-request-actions button { width:100%; }
 }
 
 </style>
