@@ -97,7 +97,7 @@
 
         <div class="case-modal-summary">
           <span><i class="bi bi-diagram-3"></i>{{ capitalizeCase(selectedCase.caseType) }} case</span>
-          <span><i class="bi bi-calendar3"></i>Archived {{ formatDate(selectedCase.updatedAt || selectedCase.createdAt) }}</span>
+          <span><i class="bi bi-calendar3"></i>Updated {{ formatDate(selectedCase.updatedAt || selectedCase.createdAt) }}</span>
           <span><i class="bi bi-file-earmark-check"></i>{{ sharedEvidence(selectedCase).length }} shared evidence items</span>
           <span><i class="bi bi-chat-square-text"></i>{{ discussions.length }} discussions</span>
         </div>
@@ -135,12 +135,15 @@
                 </div>
                 <div class="case-info-card case-actions-card">
                   <span class="case-section-eyebrow">QUICK ACTIONS</span>
+                  <button type="button" @click="saveBookmark(selectedCase)"><i class="bi bi-bookmark-plus"></i> Save this case</button>
+                  <router-link class="case-actions-link" to="/research-workspace"><i class="bi bi-journal-bookmark"></i> Open Research Workspace</router-link>
                   <button type="button" @click="activeCaseTab = 'evidence'"><i class="bi bi-file-earmark-check"></i> Review shared evidence</button>
                   <button type="button" @click="activeCaseTab = 'related'"><i class="bi bi-diagram-3"></i> Explore related cases</button>
                   <button type="button" @click="activeCaseTab = 'discussion'"><i class="bi bi-chat-square-text"></i> Join case discussion</button>
                 </div>
               </aside>
             </div>
+            <div v-if="bookmarkNotice" class="discussion-notice">{{ bookmarkNotice }}</div>
             <div v-if="restrictedCount(selectedCase)" class="restricted-summary">
               <i class="bi bi-shield-lock-fill" aria-hidden="true"></i>
               <span><strong>{{ restrictedCount(selectedCase) }} evidence item(s) are restricted</strong><small>These items remain visible to the assigned DESS team. Their names, contents and files are not exposed in the Case Repository.</small></span>
@@ -994,7 +997,10 @@ onBeforeUnmount(() => {
 .access-card-counts strong { color:#264b36; font-size:17px; }
 .access-card-counts span { color:#819087; font-size:8px; }
 .case-actions-card { display:grid; gap:6px; }
-.case-actions-card > button { display:flex; align-items:center; gap:8px; padding:8px 9px; border:1px solid #edf2ee; border-radius:7px; color:#496653; text-align:left; background:#fbfdfb; cursor:pointer; font-size:9px; font-weight:650; }
+.case-actions-card > button,.case-actions-link { display:flex; align-items:center; gap:8px; padding:8px 9px; border:1px solid #edf2ee; border-radius:7px; color:#496653; text-align:left; background:#fbfdfb; cursor:pointer; font-size:9px; font-weight:650; }
+.case-actions-link { align-items:center; gap:8px; padding:8px 9px; border:1px solid #edf2ee; border-radius:7px; color:#496653; text-decoration:none; background:#fbfdfb; font-size:9px; font-weight:650; }
+.case-actions-link i { color:#198c63; }
+.case-actions-link:hover { border-color:#cde6d6; color:#147b55; background:#f2faf5; }
 .case-actions-card > button:hover { border-color:#cde6d6; color:#147b55; background:#f2faf5; }
 .case-actions-card > button i { color:#198c63; }
 .restricted-summary { border-color:#e2ebe5; color:#667a6d; background:#f7faf8; }
