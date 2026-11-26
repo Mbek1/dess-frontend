@@ -44,6 +44,12 @@
             </router-link>
           </li>
 
+          <li class="nav-item" v-if="isAuthenticated && userRole === 'admin'">
+            <router-link to="/organizations" class="nav-link" active-class="active" @click="closeMobileNav">
+              <i class="bi bi-buildings"></i> Organisations
+            </router-link>
+          </li>
+
           <!-- Archives (for authenticated users) -->
           <li class="nav-item" v-if="isAuthenticated && userRole === 'investigator'">
             <router-link to="/archives" class="nav-link" active-class="active" @click="closeMobileNav">
