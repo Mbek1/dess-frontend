@@ -34,14 +34,18 @@
       </div>
     </section>
 
-    <section class="repository-toolbar" aria-label="Case search and sorting">
+    <section class="repository-toolbar" aria-label="Case search and filters">
       <label class="case-search" for="case-search">
         <i class="bi bi-search" aria-hidden="true"></i>
-        <input id="case-search" v-model="search" type="search" placeholder="Search by case ID, name, or description" @input="scheduleSearch" />
+        <input id="case-search" v-model="search" type="search" placeholder="Search case ID, title, description or keywords" @input="scheduleSearch" />
         <kbd>/</kbd>
       </label>
-      <label class="sort-control" for="case-sort"><span>Sort by</span><select id="case-sort" v-model="sortBy" @change="currentPage = 1; loadCases()"><option value="createdAt">Date created</option><option value="name">Case name</option><option value="caseId">Case ID</option></select></label>
+      <label class="sort-control" for="case-type-filter"><span>Classification</span><select id="case-type-filter" v-model="caseTypeFilter" @change="loadCases"><option value="">All types</option><option value="civil">Civil</option><option value="criminal">Criminal</option></select></label>
+      <label class="sort-control" for="evidence-type-filter"><span>Evidence</span><select id="evidence-type-filter" v-model="evidenceTypeFilter" @change="loadCases"><option value="">All evidence</option><option v-for="type in availableEvidenceTypes" :key="type" :value="type">{{ type }}</option></select></label>
+      <label class="sort-control" for="organization-filter"><span>Organisation</span><select id="organization-filter" v-model="organizationFilter" @change="loadCases"><option value="">All organisations</option><option v-for="name in availableOrganizations" :key="name" :value="name">{{ name }}</option></select></label>
+      <label class="sort-control" for="case-sort"><span>Sort</span><select id="case-sort" v-model="sortBy" @change="loadCases"><option value="createdAt">Date created</option><option value="updatedAt">Recently updated</option><option value="name">Case name</option><option value="caseId">Case ID</option><option value="caseType">Classification</option></select></label>
       <label class="sort-control order-control" for="case-order"><span>Order</span><select id="case-order" v-model="sortOrder" @change="loadCases"><option value="desc">Newest first</option><option value="asc">Oldest first</option></select></label>
+      <button class="clear-filters-button" type="button" @click="clearFilters"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> Clear filters</button>
     </section>
 
     <section class="case-results" aria-labelledby="results-heading">
@@ -78,6 +82,18 @@
         <header class="dialog-header"><div><p class="section-eyebrow">CASE RECORD</p><h2 :id="`case-title-${selectedCase._id}`">{{ selectedCase.caseId || `Case ${selectedCase.number}` }}</h2><p>{{ selectedCase.name }}</p></div><button class="icon-button" type="button" aria-label="Close case details" @click="selectedCase = null"><i class="bi bi-x-lg" aria-hidden="true"></i></button></header>
         <div class="dialog-content">
           <div class="case-description"><span>Case description</span><p>{{ selectedCase.description || 'No description provided.' }}</p></div>
+          <section class="related-cases-panel" aria-labelledby="related-cases-heading">
+            <div class="related-cases-heading"><div><p class="section-eyebrow">DISCOVER MORE</p><h3 id="related-cases-heading">Related cases</h3></div><span v-if="relatedCases.length">{{ relatedCases.length }} suggestions</span></div>
+            <div v-if="relatedLoading" class="related-state">Finding similar cases...</div>
+            <div v-else-if="relatedCases.length" class="related-case-list">
+              <button v-for="related in relatedCases" :key="related._id" class="related-case-row" type="button" @click="inspectCase(related)">
+                <span class="related-case-icon"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+                <span class="related-case-copy"><strong>{{ related.caseId || related.name }}</strong><small>{{ related.name }} · {{ capitalizeCase(related.caseType) }}</small><small>{{ related.relevanceReasons?.join(' · ') }}</small></span>
+                <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+              </button>
+            </div>
+            <p v-else class="related-state">No sufficiently similar cases were found in the accessible archive.</p>
+          </section>
           <div class="evidence-heading"><div><p class="section-eyebrow">EVIDENCE ACCESS</p><h3>{{ selectedCase.evidence.length }} items in case</h3></div><span class="access-legend"><i class="bi bi-unlock" aria-hidden="true"></i> Researcher approved</span></div>
           <div v-if="sharedEvidence(selectedCase).length" class="shared-evidence-list">
             <article v-for="evidence in sharedEvidence(selectedCase)" :key="evidence._id" class="shared-evidence-row">
@@ -129,6 +145,8 @@ interface CaseRecord {
   evidence: EvidenceSummary[];
   createdAt: string;
   updatedAt: string;
+  relevanceScore?: number;
+  relevanceReasons?: string[];
 }
 interface NotificationRecord {
   _id: string;
@@ -142,6 +160,13 @@ interface NotificationRecord {
 
 const router = useRouter();
 const search = ref('');
+const caseTypeFilter = ref('');
+const evidenceTypeFilter = ref('');
+const organizationFilter = ref('');
+const availableEvidenceTypes = ref<string[]>([]);
+const availableOrganizations = ref<string[]>([]);
+const relatedCases = ref<CaseRecord[]>([]);
+const relatedLoading = ref(false);
 const sortBy = ref('createdAt');
 const sortOrder = ref('desc');
 const allCases = ref<CaseRecord[]>([]);
@@ -225,10 +250,15 @@ async function loadCases() {
   try {
     const params = new URLSearchParams({ sortBy: sortBy.value, order: sortOrder.value });
     if (search.value.trim()) params.set('search', search.value.trim());
+    if (caseTypeFilter.value) params.set('caseType', caseTypeFilter.value);
+    if (evidenceTypeFilter.value) params.set('evidenceType', evidenceTypeFilter.value);
+    if (organizationFilter.value) params.set('organization', organizationFilter.value);
     const response = await fetch(`${API_CONFIG.baseURL}/api/researcher/cases?${params}`, { headers: headers() });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to load repository');
     allCases.value = data.closedCases || [];
+    availableEvidenceTypes.value = data.filters?.evidenceTypes || [];
+    availableOrganizations.value = data.filters?.organizations || [];
     currentPage.value = 1;
     openCaseError.value = data.openCaseFound && search.value.trim() ? data.openCaseFound : null;
   } catch (loadError: any) {
@@ -263,7 +293,31 @@ async function openNotification(notification: NotificationRecord) {
   if (notification.link) await router.push(notification.link);
 }
 
-function inspectCase(caseItem: CaseRecord) { selectedCase.value = caseItem; }
+async function inspectCase(caseItem: CaseRecord) {
+  selectedCase.value = caseItem;
+  relatedCases.value = [];
+  relatedLoading.value = true;
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/researcher/cases/${caseItem._id}/related`, { headers: headers() });
+    const data = await response.json();
+    if (response.ok) relatedCases.value = data.relatedCases || [];
+  } catch {
+    relatedCases.value = [];
+  } finally {
+    relatedLoading.value = false;
+  }
+}
+
+function clearFilters() {
+  search.value = '';
+  caseTypeFilter.value = '';
+  evidenceTypeFilter.value = '';
+  organizationFilter.value = '';
+  sortBy.value = 'createdAt';
+  sortOrder.value = 'desc';
+  currentPage.value = 1;
+  void loadCases();
+}
 
 async function downloadCase(caseItem: CaseRecord) {
   downloadingId.value = caseItem._id;
@@ -363,7 +417,22 @@ onBeforeUnmount(() => {
 .activity-copy time { color: #7894b0; font-size: 8px; }
 .activity-unread { width: 7px; height: 7px; border-radius: 50%; background: #3bbcff; }
 .inline-state { padding: 12px 4px; color: #8ca9c6; font-size: 10px; }
-.repository-toolbar { display: flex; align-items: center; gap: 9px; margin-bottom: 15px; padding: 10px; border: 1px solid var(--repo-line); border-radius: 7px; background: rgba(6, 29, 58, .9); }
+.repository-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 15px; padding: 10px; border: 1px solid var(--repo-line); border-radius: 7px; background: rgba(6, 29, 58, .9); }
+.clear-filters-button { display: inline-flex; min-height: 34px; align-items: center; gap: 5px; padding: 6px 9px; border: 1px solid #d8e8dd; border-radius: 5px; color: #267452; background: #fff; cursor: pointer; font-size: 9px; font-weight: 650; }
+.clear-filters-button:hover { border-color: #9fd5b4; background: #f1faf5; }
+.related-cases-panel { display: grid; gap: 8px; padding: 12px; border: 1px solid #e1eae4; border-radius: 8px; background: #f8fbf9; }
+.related-cases-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.related-cases-heading h3 { margin: 0; color: #30463a; font-size: 12px; }
+.related-cases-heading > span { color: #819087; font-size: 8px; }
+.related-case-list { display: grid; }
+.related-case-row { display: flex; align-items: center; gap: 9px; padding: 9px 2px; border: 0; border-top: 1px solid #e7eee9; color: #344a3c; text-align: left; background: transparent; cursor: pointer; }
+.related-case-row:hover { background: #f0f8f3; }
+.related-case-icon { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 6px; color: #18875f; background: #e5f4eb; }
+.related-case-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.related-case-copy strong { color: #14845f; font-size: 9px; }
+.related-case-copy small { overflow: hidden; color: #819087; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.related-case-row > i { color: #819087; font-size: 10px; }
+.related-state { margin: 0; color: #819087; font-size: 9px; }
 .case-search { display: flex; min-width: 180px; flex: 1; align-items: center; gap: 8px; padding: 0 9px; border: 1px solid #1b436b; border-radius: 5px; color: #8cabc9; background: #041a34; }
 .case-search input { width: 100%; min-width: 0; height: 34px; border: 0; outline: 0; color: #e1efff; background: transparent; font-size: 10px; }
 .case-search input::placeholder { color: #7894b0; }
