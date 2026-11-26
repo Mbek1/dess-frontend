@@ -4,8 +4,8 @@
     <!-- Header -->
     <header id="header" class="header d-flex align-items-center fixed-top">
       <div class="container-fluid container-xl position-relative d-flex align-items-center justify-content-between">
-        <a href="#" @click.prevent="scrollToSection('hero')" class="logo d-flex align-items-center">
-          <h1 class="sitename">DESS</h1>
+        <a href="#" @click.prevent="scrollToSection('hero')" class="logo d-flex align-items-center" aria-label="DESS home">
+          <img src="/img/dess-logo.svg" alt="DESS — Digital Evidence Storage System" class="landing-brand-logo" />
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>
@@ -216,7 +216,7 @@
     <!-- Footer -->
     <footer class="footer py-4 bg-dark text-white">
       <div class="container text-center">
-        <p class="mb-2"><strong class="sitename">DESS</strong> · Digital Evidence Storage System</p>
+        <p class="mb-2"><img src="/img/dess-logo.svg" alt="DESS — Digital Evidence Storage System" class="footer-brand-logo" /></p>
         <small class="d-block text-white-50">A case-based research and collaboration workspace for cybersecurity and digital forensics.</small>
         <small class="d-block text-white-50 mt-2">&copy; {{ new Date().getFullYear() }} DESS. For research and collaboration; not a replacement for official evidence-handling or court procedures.</small>
       </div>
@@ -291,3 +291,9 @@ function scrollToSection(id: string) {
 }
 
 </script>
+
+<style scoped>
+.landing-brand-logo { display: block; width: 205px; max-width: 42vw; height: 54px; object-fit: contain; object-position: left center; }
+.footer-brand-logo { display: inline-block; width: 190px; max-width: 70vw; height: 48px; object-fit: contain; }
+@media (max-width: 575px) { .landing-brand-logo { width: 165px; height: 45px; } }
+</style>
