@@ -23,6 +23,18 @@ const router = createRouter({
       component: LoginModal,
     },
     {
+      path: '/case-repo/login',
+      name: 'CaseRepositoryLogin',
+      component: LoginModal,
+      props: { initialRole: 'researcher' },
+    },
+    {
+      path: '/dess/login',
+      name: 'DessPortalLogin',
+      component: LoginModal,
+      props: { initialRole: 'investigator' },
+    },
+    {
       path: '/admin-login',
       name: 'AdminLoginPage',
       component: AdminLoginPage,

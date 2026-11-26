@@ -163,6 +163,10 @@
             </div>
           </div>
           <div class="organization-grid">
+            <label v-if="role === 'researcher'" class="profile-field" for="user-type-detail">
+              <span>Repository User Type</span>
+              <input id="user-type-detail" :value="userType ? (userType === 'student' ? 'Student' : 'Researcher') : 'Not specified'" readonly />
+            </label>
             <label class="profile-field" for="organization-name-detail">
               <span>Organization Name</span>
               <input id="organization-name-detail" v-model.trim="organizationName" placeholder="Organization or institution" />
@@ -286,6 +290,7 @@ const name = ref('');
 const email = ref('');
 const role = ref('');
 const organizationName = ref('');
+const userType = ref<'student' | 'researcher' | ''>('');
 const organizationRole = ref('');
 const organizationIdNumber = ref('');
 const password = ref('');
@@ -376,6 +381,7 @@ async function loadProfile() {
         email.value = signupData.email || '';
         role.value = signupData.role || '';
         organizationName.value = signupData.organizationName || '';
+        userType.value = signupData.userType || '';
         organizationRole.value = signupData.organizationRole || '';
         loading.value = false;
         return;
@@ -391,6 +397,7 @@ async function loadProfile() {
     email.value = user.email || '';
     role.value = user.role || storedUser.role || '';
     organizationName.value = user.organizationName || '';
+    userType.value = user.userType || '';
     organizationRole.value = user.organizationRole || '';
     organizationIdNumber.value = user.organizationIdNumber || '';
     profilePicture.value = resolveProfilePicture(user.profilePicture || '');
@@ -527,6 +534,7 @@ async function saveProfile() {
       name: name.value,
       email: email.value,
       organizationName: organizationName.value,
+      userType: userType.value,
       organizationRole: organizationRole.value,
       organizationIdNumber: organizationIdNumber.value
     };
