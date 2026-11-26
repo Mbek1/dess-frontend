@@ -138,9 +138,11 @@ function goHome() {
 async function readResponse(response: Response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = data.error || data.message || (response.status === 401
-      ? 'We could not sign you in. Check your email, password and selected workspace.'
-      : 'The request could not be completed. Please try again.');
+    const message = response.status === 401
+      ? (data.error && data.error !== 'Invalid credentials.'
+          ? data.error
+          : 'We could not verify these details. Check your email and password, and make sure you are using the correct workspace: Case Repository for repository accounts or DESS Portal for investigator accounts.')
+      : (data.error || data.message || 'The request could not be completed. Please try again.');
     throw new Error(message);
   }
   return data;
