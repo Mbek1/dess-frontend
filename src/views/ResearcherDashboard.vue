@@ -261,7 +261,7 @@
                 </div>
                 <p class="discussion-content">{{ thread.content }}</p>
                 <div class="discussion-actions">
-                  <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
+                  <button v-if="thread.isMine && !thread.isDeleted && !thread.isModerated" type="button" @click="toggleDiscussionPin(thread)"><i class="bi bi-pin-angle"></i> {{ thread.isPinned ? 'Unpin' : 'Pin' }}</button>
                   <button v-if="thread.isMine && !thread.isDeleted" type="button" @click="removeDiscussion(thread)"><i class="bi bi-trash3"></i> Delete</button>
                   <button v-if="!thread.isMine && !thread.isDeleted && !thread.isModerated" type="button" @click="startCollaborationInvite(thread.author)"><i class="bi bi-people"></i> Request collaboration</button>
                   <button v-if="!thread.isMine && !thread.isDeleted && !thread.isModerated" type="button" @click="openReport('discussion', thread._id, 'discussion contribution')"><i class="bi bi-flag"></i> Report</button>
@@ -278,7 +278,7 @@
                     <div class="discussion-actions">
                       <button v-if="!reply.isMine && !reply.isDeleted && !reply.isModerated" type="button" @click="startCollaborationInvite(reply.author)"><i class="bi bi-people"></i> Request collaboration</button>
                       <button v-if="!reply.isMine && !reply.isDeleted && !reply.isModerated" type="button" @click="openReport('discussion', reply._id, 'discussion reply')"><i class="bi bi-flag"></i> Report</button>
-                      <button v-if="reply.isMine && !reply.isDeleted" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
+                      <button v-if="reply.isMine && !reply.isDeleted && !reply.isModerated" type="button" @click="removeDiscussion(reply)"><i class="bi bi-trash3"></i> Delete</button>
                     </div>
                   </article>
                 </div>
