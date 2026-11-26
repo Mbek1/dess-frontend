@@ -149,6 +149,7 @@
 
           <section v-else-if="activeCaseTab === 'evidence'" class="case-tab-panel" role="tabpanel">
             <div class="case-section-heading case-tab-intro"><div><span class="case-section-eyebrow">RESEARCHER-APPROVED MATERIAL</span><h3>Evidence available for review</h3><p>Only evidence explicitly shared by the case team is listed here.</p></div><span class="case-tab-count">{{ sharedEvidence(selectedCase).length }} available</span></div>
+            <div v-if="bookmarkNotice" class="discussion-notice">{{ bookmarkNotice }}</div>
             <div v-if="sharedEvidence(selectedCase).length" class="case-evidence-grid">
               <article v-for="evidence in sharedEvidence(selectedCase)" :key="evidence._id" class="case-evidence-card">
                 <div class="case-evidence-icon"><i class="bi bi-file-earmark-check"></i></div>
@@ -169,7 +170,7 @@
           </section>
 
           <section v-else-if="activeCaseTab === 'related'" class="case-tab-panel" role="tabpanel">
-            <div class="case-section-heading case-tab-intro"><div><span class="case-section-eyebrow">DISCOVERY</span><h3>Related cases</h3><p>Other closed cases with overlapping topics, classifications or shared evidence types.</p></div><button class="case-subtle-button" type="button" @click="inspectCase(selectedCase)" :disabled="relatedLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div>
+            <div class="case-section-heading case-tab-intro"><div><span class="case-section-eyebrow">DISCOVERY</span><h3>Related cases</h3><p>Other closed cases with overlapping topics, classifications or shared evidence types.</p></div><button class="case-subtle-button" type="button" @click="loadRelatedCases(selectedCase._id)" :disabled="relatedLoading"><i class="bi bi-arrow-clockwise"></i> Refresh</button></div>
             <div v-if="relatedLoading" class="case-tab-empty"><span class="spinner-border spinner-border-sm"></span><strong>Finding related cases</strong><span>Comparing case descriptions, keywords and researcher-visible evidence types.</span></div>
             <div v-else-if="relatedCases.length" class="related-case-grid">
               <button v-for="related in relatedCases" :key="related._id" class="related-case-card" type="button" @click="inspectCase(related)">
@@ -317,6 +318,7 @@ const postingDiscussion = ref(false);
 const collaborationTarget = ref<any>(null);
 const collaborationMessage = ref('');
 const sendingCollaborationInvite = ref(false);
+const bookmarkNotice = ref('');
 const showNotifications = ref(false);
 const notifications = ref<NotificationRecord[]>([]);
 const notificationsLoading = ref(false);
@@ -438,6 +440,8 @@ async function openNotification(notification: NotificationRecord) {
 }
 
 async function saveBookmark(caseItem: CaseRecord, evidence?: EvidenceSummary) {
+  const belongsToOpenCase = selectedCase.value?._id === caseItem._id;
+  if (belongsToOpenCase) bookmarkNotice.value = '';
   try {
     const response = await fetch(`${API_CONFIG.baseURL}/api/research-workspace/bookmarks`, {
       method: 'POST',
@@ -446,10 +450,15 @@ async function saveBookmark(caseItem: CaseRecord, evidence?: EvidenceSummary) {
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok && response.status !== 409) throw new Error(data.error || 'Could not save bookmark');
-    error.value = response.status === 409 ? 'This item is already in your Research Workspace.' : '';
-    if (response.ok) error.value = evidence ? 'Evidence saved to your Research Workspace.' : 'Case saved to your Research Workspace.';
+    const message = response.status === 409
+      ? 'This item is already in your Research Workspace.'
+      : evidence ? 'Evidence saved to your Research Workspace.' : 'Case saved to your Research Workspace.';
+    if (belongsToOpenCase) bookmarkNotice.value = message;
+    else error.value = message;
   } catch (bookmarkError: any) {
-    error.value = bookmarkError?.message || 'Could not save bookmark.';
+    const message = bookmarkError?.message || 'Could not save bookmark.';
+    if (belongsToOpenCase) bookmarkNotice.value = message;
+    else error.value = message;
   }
 }
 
@@ -580,11 +589,26 @@ async function sendCollaborationInvite() {
   }
 }
 
+async function loadRelatedCases(caseId: string) {
+  relatedLoading.value = true;
+  try {
+    const response = await fetch(`${API_CONFIG.baseURL}/api/researcher/cases/${caseId}/related`, { headers: headers() });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load related cases');
+    relatedCases.value = data.relatedCases || [];
+  } catch {
+    relatedCases.value = [];
+  } finally {
+    relatedLoading.value = false;
+  }
+}
+
 async function inspectCase(caseItem: CaseRecord) {
   selectedCase.value = caseItem;
   activeCaseTab.value = 'overview';
   discussionError.value = '';
   discussionNotice.value = '';
+  bookmarkNotice.value = '';
   discussions.value = [];
   newDiscussionContent.value = '';
   discussionReplyContent.value = '';
@@ -592,16 +616,7 @@ async function inspectCase(caseItem: CaseRecord) {
   collaborationTarget.value = null;
   relatedCases.value = [];
   void loadDiscussions(caseItem._id);
-  relatedLoading.value = true;
-  try {
-    const response = await fetch(`${API_CONFIG.baseURL}/api/researcher/cases/${caseItem._id}/related`, { headers: headers() });
-    const data = await response.json();
-    if (response.ok) relatedCases.value = data.relatedCases || [];
-  } catch {
-    relatedCases.value = [];
-  } finally {
-    relatedLoading.value = false;
-  }
+  void loadRelatedCases(caseItem._id);
 }
 
 function clearFilters() {
